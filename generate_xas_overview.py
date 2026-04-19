@@ -91,7 +91,7 @@ delta_trig  = 0.030      # eV
 zeta_d_i    = 0.030      # eV
 zeta_d_n    = 0.030      # eV
 T_K         = 10.0
-res_FWHM_eV = 0.035
+res_FWHM_eV = 0.030
 sigma_res   = res_FWHM_eV / (2 * np.sqrt(2 * np.log(2)))
 
 thin_rad = np.radians(15.0)

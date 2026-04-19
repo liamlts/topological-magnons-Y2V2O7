@@ -11,13 +11,12 @@ Y2V2O7 crystal-field parameters:
 
 Geometry (I21, Diamond Light Source):
   θ_in = 15°, θ_out = 135° (2θ ≈ 150° horizontal scattering)
-  Resolution = 35 meV FWHM (I21 at V L3 ≈ 515 eV, high-resolution grating)
+  Resolution = 30 meV FWHM (I21 at V L3 ≈ 515 eV, high-resolution grating)
 
-Produces Figures/fig_vv_dimer.pdf — 4-panel figure:
-  a. V L3 XAS (σ, π, sum) with RIXS incident energy marked
+Produces Figures/fig_vv_dimer.pdf — 3-panel figure:
+  a. V L3 XAS (σ, π) with RIXS incident energy marked
   b. RIXS plane (E_inc × E_loss, spin-flip channel) — shows resonance profile
   c. V4+ energy levels + V–V dimer singlet/triplet from edrixs.build_opers
-  d. RIXS at resonance: spin-flip vs conserving + I21 resolution + phonon overlay
 """
 
 import os
