@@ -425,12 +425,8 @@ A_ph_2d  = 0.65 * max(np.max(I_2d[i_res]), 1e-30)
 ph_shape = np.exp(-0.5 * ((eloss_eV - 0.100) / 0.008)**2)   # 8 meV σ
 I_2d    += A_ph_2d * xas_env[:, None] * ph_shape[None, :]
 
-# Elastic line: resolution-limited peak at 0 meV loss, follows XAS envelope
-# Amplitude relative to inelastic — in real RIXS elastic is intense but
-# we reduce it here to avoid washing out the inelastic features in the colorscale
-A_el     = 1.5 * max(np.max(I_2d[i_res]), 1e-30)
-el_shape = np.exp(-0.5 * (eloss_eV / (sigma_res * 0.7))**2)  # slightly sub-resolution (spectrometer tail)
-I_2d    += A_el * xas_env[:, None] * el_shape[None, :]
+# Note: no phenomenological elastic line added — the KH calculation already
+# produces elastic scattering (f=g transitions at ΔE=0) naturally.
 
 # Gaussian broaden along incident energy axis for smoother appearance
 sig_inc = 0.08  # eV σ (~190 meV FWHM) — mild cosmetic smoothing
@@ -473,7 +469,12 @@ ax_m.text(E_res + 0.07, 145,
           rf'$E_{{\rm res}}$', fontsize=5.5, color='w', va='top', ha='left')
 
 # Feature markers: horizontal lines at energy-loss positions (meV)
-for E_pk_meV, lbl in [(0, 'elastic'), (E_rel[1], '$J$'), (16, 'SOC$_1$'), (67, 'SOC$_2$'), (100, 'ph.')]:
+# Use SOC peak positions from 1D spectrum peak-finding (E_soc includes all peaks >5 meV)
+# Filter to get SOC peaks (above exchange gap)
+_soc_peaks = E_soc[E_soc > 15.0]  # SOC peaks are well above J~8 meV
+E_soc1_lbl = _soc_peaks[0] if len(_soc_peaks) > 0 else 22.0
+E_soc2_lbl = _soc_peaks[1] if len(_soc_peaks) > 1 else 67.0
+for E_pk_meV, lbl in [(E_rel[1], '$J$'), (E_soc1_lbl, 'SOC$_1$'), (E_soc2_lbl, 'SOC$_2$'), (100, 'ph.')]:
     ax_m.axhline(E_pk_meV, color='w', lw=0.35, ls=':', alpha=0.55)
     ax_m.text(ominc_scan[0] + 0.08, E_pk_meV + 2, lbl,
               fontsize=4.5, color='w', ha='left', va='bottom')
