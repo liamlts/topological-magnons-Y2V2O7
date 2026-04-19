@@ -373,7 +373,7 @@ for i, Ep in enumerate(E_soc):
 
 y_top = np.max(I_iso_total/norm)
 ax.set_xlabel('Energy loss (meV)')
-ax.set_ylabel('RIXS (norm.)')
+ax.set_ylabel('RIXS (norm. units)')
 ax.set_xlim(-10, 200)
 ax.set_ylim(-0.03, y_top * 1.28)
 ax.legend(fontsize=5.5, loc='upper right', framealpha=0.9)
@@ -430,6 +430,15 @@ A_el     = 1.5 * max(np.max(I_2d[i_res]), 1e-30)
 el_shape = np.exp(-0.5 * (eloss_eV / (sigma_res * 0.7))**2)  # slightly sub-resolution (spectrometer tail)
 I_2d    += A_el * xas_env[:, None] * el_shape[None, :]
 
+# Gaussian broaden along incident energy axis for smoother appearance
+sig_inc = 0.08  # eV σ (~190 meV FWHM) — mild cosmetic smoothing
+dE_inc  = float(ominc_scan[1] - ominc_scan[0])
+hw_inc  = int(4 * sig_inc / dE_inc) + 1
+k_inc   = np.arange(-hw_inc, hw_inc + 1) * dE_inc
+kern_inc = np.exp(-0.5 * (k_inc / sig_inc)**2); kern_inc /= kern_inc.sum()
+from scipy.ndimage import convolve1d
+I_2d = convolve1d(I_2d, kern_inc, axis=0, mode='nearest')
+
 print(f"  2D map done in {time.time()-t_2d:.1f}s.  Peak intensity: {np.max(I_2d):.3e}")
 
 # ── Figure: 2D RIXS map (incident energy on x, energy loss in eV on y) ────
@@ -451,7 +460,7 @@ im      = ax_m.pcolormesh(ominc_scan, e_disp_meV, I_disp.T,
                            cmap='inferno', norm=n2d,
                            shading='auto', rasterized=True)
 cb = fig_2d.colorbar(im, ax=ax_m, fraction=0.042, pad=0.025, aspect=22)
-cb.set_label('RIXS (a.u.)', fontsize=5.5)
+cb.set_label('RIXS (arb. units)', fontsize=5.5)
 cb.ax.tick_params(labelsize=4.5, width=0.3, length=1.5)
 cb.outline.set_linewidth(0.4)
 
@@ -475,7 +484,7 @@ ax_m.set_ylim(-25, 150)
 # XAS top panel
 ax_x.plot(ominc_scan, xas_env, color='#5BA4CF', lw=0.9)
 ax_x.fill_between(ominc_scan, 0, xas_env, alpha=0.30, color='#5BA4CF')
-ax_x.set_ylabel('XAS\n(norm.)', fontsize=5.5, labelpad=1)
+ax_x.set_ylabel('XAS\n(norm. units)', fontsize=5.5, labelpad=1)
 ax_x.set_ylim(0, 1.45)
 ax_x.tick_params(labelbottom=False, labelsize=5.5)
 ax_x.set_title(r'V$^{4+}$–V$^{4+}$ dimer 2D RIXS ($\pi$ in, isotropic out)',

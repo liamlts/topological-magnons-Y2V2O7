@@ -468,7 +468,7 @@ for ip, si in enumerate(dj_idx):
 sm  = plt.cm.ScalarMappable(cmap='inferno', norm=norm)
 sm.set_array([])
 cb  = fig.colorbar(sm, ax=list(axes), fraction=0.012, pad=0.014, aspect=22)
-cb.set_label(r'$S_\perp(\mathbf{q},\omega)$ (a.u.)', fontsize=6)
+cb.set_label(r'$S_\perp(\mathbf{q},\omega)$ (arb. units)', fontsize=6)
 cb.ax.tick_params(labelsize=5, width=0.3, length=2)
 cb.outline.set_linewidth(0.4)
 
@@ -1174,7 +1174,7 @@ for T, k in zip(T_vals, kxy_vals):
 # Digitized from Fig. 4A: spontaneous κ^xy vs T (just above saturation field)
 # Note: Onose convention gives positive κ^xy; our LSWT DM sign gives negative.
 # We plot |κ^xy| for shape comparison — overall sign depends on DM vector convention.
-_onose_raw = np.loadtxt('data (5).csv', delimiter=',')  # columns: T(K), κ^xy (10⁻³ W/K·m)
+_onose_raw = np.loadtxt('onose2010_fig4a_digitized.csv', delimiter=',')  # columns: T(K), κ^xy (10⁻³ W/K·m)
 _sort = np.argsort(_onose_raw[:, 0])
 T_exp    = _onose_raw[_sort, 0]
 kxy_exp  = _onose_raw[_sort, 1] * 1e-3   # convert 10⁻³ W/(K·m) → W/(K·m)

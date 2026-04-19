@@ -220,17 +220,17 @@ if mask_eg.any():
             xas_tot[mask_eg][i_eg] / tot_max + 0.05,
             r'$e_g$', ha='center', va='bottom', fontsize=5, color=C_SUM, style='italic')
 
-# L2 edge label
+# L2 edge label — positioned at fixed location for clarity
 mask_l2 = (ominc > 521) & (ominc < 530)
 if mask_l2.any():
     i_l2 = np.argmax(xas_tot[mask_l2])
     E_l2_peak = ominc[mask_l2][i_l2]
-    ax.text(E_l2_peak, xas_tot[mask_l2][i_l2] / tot_max + 0.05,
+    ax.text(520.0, 0.5,
             r'$L_2$', ha='center', va='bottom', fontsize=6.5, color=C_SUM, fontweight='bold')
     print(f"L2 peak: {E_l2_peak:.2f} eV")
 
 ax.set_xlabel('Incident energy (eV)')
-ax.set_ylabel('XAS (norm.)')
+ax.set_ylabel('XAS (norm. units)')
 ax.set_xlim(500, 530)
 ax.set_ylim(-0.03, 1.22)
 ax.legend(fontsize=5.5, loc='upper left', framealpha=0.85, ncol=1)

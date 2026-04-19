@@ -376,7 +376,7 @@ _xas_lines(ax_xas, do_legend=True)
 ax_xas.set_xlim(512.0, 522.0)
 ax_xas.set_ylim(-0.02, 1.18)
 ax_xas.set_xlabel('Incident energy (eV)')
-ax_xas.set_ylabel('XAS (norm.)')
+ax_xas.set_ylabel('XAS (norm. units)')
 
 # L3 / L2 edge labels on main panel
 tot_max_xas = max(np.max(xas_total_disp), 1e-30)
@@ -387,8 +387,7 @@ if mask_l3.any():
                 r'$L_3$', fontsize=5.5, ha='center', va='bottom', color='0.4')
 mask_l2 = (ominc_xas > 522) & (ominc_xas < 530)
 if mask_l2.any():
-    i_l2 = np.argmax(xas_total_disp[mask_l2])
-    ax_xas.text(ominc_xas[mask_l2][i_l2], xas_total_disp[mask_l2][i_l2] / tot_max_xas + 0.05,
+    ax_xas.text(520.0, 0.5,
                 r'$L_2$', fontsize=5.5, ha='center', va='bottom', color='0.4')
 
 label(ax_xas, 'a')
@@ -397,6 +396,15 @@ label(ax_xas, 'a')
 # ─── Panel b: RIXS plane ────────────────────────────────────────────────────
 X_plane = ominc_plane              # absolute incident energy (eV)
 Y_plane = eloss_plane_meV           # -60 → 200 meV
+
+# Mild Gaussian broadening along incident energy axis for smoother map
+from scipy.ndimage import convolve1d
+sig_inc_7b = 0.08  # eV σ
+dE_inc_7b  = float(X_plane[1] - X_plane[0])
+hw_7b      = int(4 * sig_inc_7b / dE_inc_7b) + 1
+k_7b       = np.arange(-hw_7b, hw_7b + 1) * dE_inc_7b
+kern_7b    = np.exp(-0.5 * (k_7b / sig_inc_7b)**2); kern_7b /= kern_7b.sum()
+rixs_plane = convolve1d(rixs_plane, kern_7b, axis=0, mode='nearest')
 
 # vmax from signal region (exclude elastic at |eloss| < 5 meV)
 signal_mask = np.abs(eloss_plane_meV) > 5
@@ -413,14 +421,17 @@ ax_plane.axhline(0, color='w', lw=0.4, ls=':', alpha=0.4)        # elastic
 ax_plane.text(E_res + 0.12, 30, r'$E_{\rm res}$',
               fontsize=5.5, va='bottom', ha='left', color='w')
 
-# Annotate SOC peaks — all with units
+# Annotate excitations with physical labels
+_peak_labels = {0: 'elastic', 8: '$J$', 16: r'SOC$_1$', 61: r'SOC$_2$', 100: 'ph.'}
 for i, Ep in enumerate(E_soc_peaks):
     ax_plane.axhline(Ep, color='w', lw=0.4, ls=':', alpha=0.5)
-    ax_plane.text(X_plane[1] + 0.05, Ep + 3, f'{Ep:.0f} meV',
+    # Find closest named label, else just use meV
+    lbl = _peak_labels.get(int(round(Ep)), f'{Ep:.0f} meV')
+    ax_plane.text(X_plane[1] + 0.05, Ep + 3, lbl,
                   fontsize=5, color='w', ha='left', va='bottom')
 
 cb = fig.colorbar(pc, ax=ax_plane, fraction=0.046, pad=0.03, aspect=20)
-cb.set_label(r'$I_{\sigma\pi}$ (a.u.)', fontsize=6)
+cb.set_label(r'$I_{\sigma\pi}$ (arb. units)', fontsize=6)
 cb.ax.tick_params(labelsize=5, width=0.3, length=2)
 cb.outline.set_linewidth(0.4)
 
