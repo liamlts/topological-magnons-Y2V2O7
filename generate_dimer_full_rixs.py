@@ -40,8 +40,10 @@ COL1 = 3.386; C_FLIP = '#D42E2E'; C_CONS = '#0073BD'; C_PHON = '#38A12B'; C_SUM 
 
 # ── Parameters ────────────────────────────────────────────────────────────────
 ten_dq    = 1.9;   delta_trig = 0.030;  zeta_d = 0.030   # eV
-# J > 0 = ferromagnetic (triplet lower than singlet by J).
-# Convention: H = J S̃_A · S̃_B with J > 0 gives FM ground-state triplet.
+# J > 0 = antiferromagnetic dimer convention (singlet ground state, triplet at +J).
+# In the bulk ferromagnet the magnon is the zone-centre singlet-to-triplet excitation,
+# so the RIXS exchange peak appears at ΔE = J regardless of the bulk ordering.
+# Convention: H = J S̃_A · S̃_B with J > 0 gives singlet GS at −3J/4, triplet at +J/4.
 J_meV     = 8.22;  J_eV = J_meV / 1000.0
 T_K       = 10.0;  kBT  = T_K * 8.617e-5                 # eV
 gamma_f   = 0.002                                          # eV final-state width
@@ -328,7 +330,7 @@ for s in range(2):
 # (final-state Lorentzian) and gamma_c (core-hole, absorbed in KH formula).
 dE = float(eloss_eV[1] - eloss_eV[0])
 A_ph = 0.65 * max(np.max(I_cons), 1e-30)
-phonon = A_ph * np.exp(-0.5*((eloss_eV - 0.100)/0.003)**2)   # 3 meV σ intrinsic
+phonon = A_ph * np.exp(-0.5*((eloss_eV - 0.100)/0.008)**2)   # 8 meV σ (~19 meV FWHM)
 I_cons_total = I_cons + phonon
 I_sf_total   = I_sf   + phonon * 0.05
 I_iso_total  = I_cons_total + I_sf_total
@@ -420,7 +422,7 @@ xas_conv_disp = np.convolve(xas_conv, kern_d, mode='same')
 xas_env  = np.interp(ominc_scan, ominc_xas, xas_conv_disp / (np.max(xas_conv_disp) + 1e-30))
 i_res    = np.argmin(np.abs(ominc_scan - E_res))
 A_ph_2d  = 0.65 * max(np.max(I_2d[i_res]), 1e-30)
-ph_shape = np.exp(-0.5 * ((eloss_eV - 0.100) / 0.003)**2)   # 3 meV σ
+ph_shape = np.exp(-0.5 * ((eloss_eV - 0.100) / 0.008)**2)   # 8 meV σ
 I_2d    += A_ph_2d * xas_env[:, None] * ph_shape[None, :]
 
 # Elastic line: resolution-limited peak at 0 meV loss, follows XAS envelope
@@ -471,7 +473,7 @@ ax_m.text(E_res + 0.07, 145,
           rf'$E_{{\rm res}}$', fontsize=5.5, color='w', va='top', ha='left')
 
 # Feature markers: horizontal lines at energy-loss positions (meV)
-for E_pk_meV, lbl in [(0, 'elastic'), (E_rel[1], '$J$'), (22, 'SOC$_1$'), (67, 'SOC$_2$'), (100, 'ph.')]:
+for E_pk_meV, lbl in [(0, 'elastic'), (E_rel[1], '$J$'), (16, 'SOC$_1$'), (67, 'SOC$_2$'), (100, 'ph.')]:
     ax_m.axhline(E_pk_meV, color='w', lw=0.35, ls=':', alpha=0.55)
     ax_m.text(ominc_scan[0] + 0.08, E_pk_meV + 2, lbl,
               fontsize=4.5, color='w', ha='left', va='bottom')

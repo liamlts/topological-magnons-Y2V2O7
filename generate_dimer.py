@@ -335,7 +335,7 @@ exch_conv = gauss_convolve(exch_flip, sigma_res, dE)
 # Amplitude is arbitrary — set to 65% of the max electronic signal for visibility.
 E_ph    = 0.100   # eV
 A_ph    = 0.65 * norm_ref
-sig_ph  = 0.015   # eV (≈ 35 meV FWHM intrinsic width)
+sig_ph  = 0.008   # eV (≈ 19 meV FWHM intrinsic width)
 leakage = 0.05
 phonon       = A_ph * np.exp(-0.5 * ((eloss_eV - E_ph) / sig_ph) ** 2)
 phonon_conv  = gauss_convolve(phonon, sigma_res, dE)
@@ -359,14 +359,13 @@ ax_lvl   = fig.add_subplot(gs[1, :])        # c: energy levels (full width)
 
 
 # ─── Panel a: XAS — full range 514–530 eV (main) + L3 zoom (inset) ─────────
-# Normalize each polarization to its own max for better visual use of space
-sig_max_xas = max(np.max(xas_sigma_disp), 1e-30)
-pi_max_xas  = max(np.max(xas_pi_disp), 1e-30)
+# Normalize all polarizations to the same global max (preserves dichroism ratio)
+xas_global_max = max(np.max(xas_sigma_disp), np.max(xas_pi_disp), 1e-30)
 
 def _xas_lines(ax, lw_main=0.9, do_legend=False):
-    ax.plot(ominc_xas, xas_sigma_disp / sig_max_xas, color=C_CONS, lw=lw_main,
+    ax.plot(ominc_xas, xas_sigma_disp / xas_global_max, color=C_CONS, lw=lw_main,
             label=r'$\sigma$ (LH)')
-    ax.plot(ominc_xas, xas_pi_disp    / pi_max_xas,  color=C_FLIP, lw=lw_main,
+    ax.plot(ominc_xas, xas_pi_disp    / xas_global_max,  color=C_FLIP, lw=lw_main,
             label=r'$\pi$ (LV)')
     if do_legend:
         ax.legend(fontsize=5.0, loc='upper right', framealpha=0.85, ncol=1)
@@ -374,16 +373,17 @@ def _xas_lines(ax, lw_main=0.9, do_legend=False):
 # Main panel: full L3 + L2 range
 _xas_lines(ax_xas, do_legend=True)
 ax_xas.set_xlim(512.0, 522.0)
-ax_xas.set_ylim(-0.02, 1.18)
+# Set y-axis so the tallest peak reaches ~95% of the displayed range
+y_peak = max(np.max(xas_sigma_disp), np.max(xas_pi_disp)) / xas_global_max
+ax_xas.set_ylim(-0.02, y_peak / 0.95)
 ax_xas.set_xlabel('Incident energy (eV)')
-ax_xas.set_ylabel('XAS (norm. units)')
+ax_xas.set_ylabel('XAS (arb. units)')
 
 # L3 / L2 edge labels on main panel
-tot_max_xas = max(np.max(xas_total_disp), 1e-30)
 mask_l3 = (ominc_xas > 515) & (ominc_xas < 522)
 if mask_l3.any():
     i_l3 = np.argmax(xas_total_disp[mask_l3])
-    ax_xas.text(ominc_xas[mask_l3][i_l3], xas_total_disp[mask_l3][i_l3] / tot_max_xas + 0.05,
+    ax_xas.text(ominc_xas[mask_l3][i_l3], xas_total_disp[mask_l3][i_l3] / xas_global_max + 0.05,
                 r'$L_3$', fontsize=5.5, ha='center', va='bottom', color='0.4')
 mask_l2 = (ominc_xas > 522) & (ominc_xas < 530)
 if mask_l2.any():
@@ -423,10 +423,19 @@ ax_plane.text(E_res + 0.12, 30, r'$E_{\rm res}$',
 
 # Annotate excitations with physical labels
 _peak_labels = {0: 'elastic', 8: '$J$', 16: r'SOC$_1$', 61: r'SOC$_2$', 100: 'ph.'}
+
+def _nearest_label(E_meV, tol=4):
+    """Find nearest label within tol meV."""
+    best_k, best_d = None, tol + 1
+    for k in _peak_labels:
+        d = abs(E_meV - k)
+        if d < best_d:
+            best_d, best_k = d, k
+    return _peak_labels[best_k] if best_k is not None else f'{E_meV:.0f} meV'
+
 for i, Ep in enumerate(E_soc_peaks):
     ax_plane.axhline(Ep, color='w', lw=0.4, ls=':', alpha=0.5)
-    # Find closest named label, else just use meV
-    lbl = _peak_labels.get(int(round(Ep)), f'{Ep:.0f} meV')
+    lbl = _nearest_label(Ep)
     ax_plane.text(X_plane[1] + 0.05, Ep + 3, lbl,
                   fontsize=5, color='w', ha='left', va='bottom')
 

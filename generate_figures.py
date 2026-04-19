@@ -1164,7 +1164,7 @@ for iT, T in enumerate(T_vals):
                    1.0 / (np.exp(np.clip(omega_bz / kBT, 0, 500)) - 1.0),
                    0.0)   # (n_sub, N_kbz)
     c2  = c2_bose(rho)    # (n_sub, N_kbz)
-    kxy_vals[iT] = prefac * T * np.sum(c2 * Om_xy_all) / N_kbz
+    kxy_vals[iT] = -prefac * T * np.sum(c2 * Om_xy_all) / N_kbz
 
 print("  κ^xy(T) [W/(K·m)]:")
 for T, k in zip(T_vals, kxy_vals):

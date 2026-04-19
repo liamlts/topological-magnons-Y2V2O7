@@ -181,12 +181,9 @@ l3_sig_b = gauss_convolve(raw_l3[:, 0], sigma_res, dE)
 E_res = ominc[np.argmax(l3_sig_b)]
 print(f"L3 resonance (E_RIXS): {E_res:.2f} eV")
 
-# Normalise to L3 t2g peak
-# Normalise each polarization to its own maximum for better visual comparison
+# Normalise all channels to the same global maximum (preserves dichroism)
 mask_l3 = (ominc > 513) & (ominc < 522)
-sig_max = max(np.max(xas_sig[mask_l3]), 1e-30)
-pi_max  = max(np.max(xas_pi[mask_l3]), 1e-30)
-tot_max = max(np.max(xas_tot[mask_l3]), 1e-30)
+global_max = max(np.max(xas_sig), np.max(xas_pi), 1e-30)
 
 # ── Figure ────────────────────────────────────────────────────────────────────
 print("\nGenerating: fig_xas_overview")
@@ -194,9 +191,9 @@ fig, ax = plt.subplots(figsize=(COL1, 2.5),
                         gridspec_kw={'left': 0.14, 'right': 0.97,
                                      'top': 0.97, 'bottom': 0.18})
 
-ax.plot(ominc, xas_sig / sig_max, color=C_CONS, lw=1.1, label=r'$\sigma$ (LH)')
-ax.plot(ominc, xas_pi  / pi_max,  color=C_FLIP, lw=1.1, label=r'$\pi$ (LV)')
-ax.plot(ominc, xas_tot / tot_max, color=C_SUM,  lw=0.7, ls='--',
+ax.plot(ominc, xas_sig / global_max, color=C_CONS, lw=1.1, label=r'$\sigma$ (LH)')
+ax.plot(ominc, xas_pi  / global_max, color=C_FLIP, lw=1.1, label=r'$\pi$ (LV)')
+ax.plot(ominc, xas_tot / global_max, color=C_SUM,  lw=0.7, ls='--',
         label='Total', alpha=0.85)
 
 # E_RIXS marker
@@ -207,17 +204,17 @@ ax.text(E_res + 0.15, 0.93, r'$E_{\rm RIXS}$',
 # L3 edge label: above t2g peak
 i_l3 = np.argmax(xas_tot[mask_l3])
 E_l3_peak = ominc[mask_l3][i_l3]
-ax.text(E_l3_peak, xas_tot[mask_l3][i_l3] / tot_max + 0.05,
+ax.text(E_l3_peak, xas_tot[mask_l3][i_l3] / global_max + 0.05,
         r'$L_3$', ha='center', va='bottom', fontsize=6.5, color=C_SUM, fontweight='bold')
 
 # t2g and eg sub-labels within L3
-ax.text(E_res - 0.10, np.interp(E_res, ominc, xas_sig) / sig_max + 0.06,
+ax.text(E_res - 0.10, np.interp(E_res, ominc, xas_sig) / global_max + 0.06,
         r'$t_{2g}$', ha='right', va='bottom', fontsize=5, color=C_SUM, style='italic')
 mask_eg = (ominc > E_res + 0.8) & (ominc < E_res + 3.0)
 if mask_eg.any():
     i_eg = np.argmax(xas_tot[mask_eg])
     ax.text(ominc[mask_eg][i_eg],
-            xas_tot[mask_eg][i_eg] / tot_max + 0.05,
+            xas_tot[mask_eg][i_eg] / global_max + 0.05,
             r'$e_g$', ha='center', va='bottom', fontsize=5, color=C_SUM, style='italic')
 
 # L2 edge label — positioned at fixed location for clarity
@@ -230,9 +227,11 @@ if mask_l2.any():
     print(f"L2 peak: {E_l2_peak:.2f} eV")
 
 ax.set_xlabel('Incident energy (eV)')
-ax.set_ylabel('XAS (norm. units)')
+ax.set_ylabel('XAS (arb. units)')
 ax.set_xlim(500, 530)
-ax.set_ylim(-0.03, 1.22)
+# Restrict y-axis so tallest peak is ~95% of displayed range
+y_peak = max(np.max(xas_tot / global_max), 1.0)
+ax.set_ylim(-0.03, y_peak / 0.95)
 ax.legend(fontsize=5.5, loc='upper left', framealpha=0.85, ncol=1)
 
 save(fig, 'fig_xas_overview')
