@@ -9,6 +9,11 @@
 *.fdb_latexmk
 *.toc
 
+# Manuscript (not tracked in this repo)
+main.tex
+mainNotes.bib
+NOTES.md
+
 # Python
 __pycache__/
 *.pyc
