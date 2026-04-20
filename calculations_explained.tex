@@ -1,0 +1,736 @@
+%% ============================================================
+%%  Detailed Calculation Breakdown: Topological Magnons in Y2V2O7
+%%  Companion Document for Advisor Presentation
+%%  Author: Liam T. Schmidt
+%% ============================================================
+\documentclass[11pt,letterpaper]{article}
+
+%% --- Packages ---
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{siunitx}
+\usepackage{physics}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{fancyhdr}
+
+\tcbuselibrary{theorems,skins,breakable}
+
+%% Custom environments for key results and caveats
+\newtcolorbox{keyresult}[1][]{
+  colback=green!5!white,
+  colframe=green!50!black,
+  title={Key Result},
+  fonttitle=\bfseries,
+  #1
+}
+
+\newtcolorbox{assumption}[1][]{
+  colback=yellow!10!white,
+  colframe=orange!70!black,
+  title={Assumption / Caveat},
+  fonttitle=\bfseries,
+  #1
+}
+
+\newtcolorbox{derivation}[1][]{
+  colback=blue!5!white,
+  colframe=blue!50!black,
+  title={Derivation Details},
+  fonttitle=\bfseries,
+  breakable,
+  #1
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Topological Magnons Calculations}
+\lhead{Liam Schmidt}
+\cfoot{\thepage}
+
+\sisetup{separate-uncertainty=true, range-phrase={--}, range-units=single}
+
+%% ============================================================
+\begin{document}
+
+\title{\textbf{Detailed Calculation Breakdown}\\[0.5em]
+\Large Topological Magnon Band Structure in Y$_2$V$_2$O$_7$:\\
+Weyl Magnons and Polarimetric RIXS Signatures}
+
+\author{Liam T. Schmidt\\
+\small Department of Physics, Northeastern University}
+
+\date{\today}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+%% ============================================================
+\section{Overview and Scope}
+%% ============================================================
+
+This document provides a detailed breakdown of all theoretical calculations presented in the manuscript ``Topological Magnon Band Structure in Y$_2$V$_2$O$_7$: Weyl Magnons and Polarimetric RIXS Signatures.'' Each calculation is explained step-by-step, with explicit attention to:
+
+\begin{itemize}
+    \item Physical assumptions and their justifications
+    \item Mathematical derivations and approximations
+    \item Numerical implementation details
+    \item Parameter choices and their sources
+    \item Potential limitations and caveats
+\end{itemize}
+
+The calculations fall into four main categories:
+\begin{enumerate}
+    \item \textbf{Linear Spin-Wave Theory (LSWT)} --- Magnon band structure
+    \item \textbf{Topological Analysis} --- Berry curvature and Chern numbers
+    \item \textbf{$k \cdot p$ Theory} --- Weyl point characterization
+    \item \textbf{Cluster Exact Diagonalization (CED)} --- RIXS spectra
+\end{enumerate}
+
+%% ============================================================
+\section{Spin Hamiltonian Construction}
+%% ============================================================
+
+\subsection{The Full Hamiltonian}
+
+The starting point is the spin Hamiltonian for nearest-neighbor V$^{4+}$ ions on the pyrochlore lattice:
+
+\begin{equation}
+\boxed{
+\mathcal{H} = -J \sum_{\langle ij \rangle} \bm{S}_i \cdot \bm{S}_j
+             + \sum_{\langle ij \rangle} \bm{D}_{ij} \cdot
+               \left(\bm{S}_i \times \bm{S}_j\right)
+}
+\label{eq:Hfull}
+\end{equation}
+
+\begin{derivation}[title={Term-by-term breakdown}]
+\textbf{Heisenberg Exchange (First Term):}
+\begin{equation}
+\mathcal{H}_{\text{Heis}} = -J \sum_{\langle ij \rangle} \bm{S}_i \cdot \bm{S}_j
+= -J \sum_{\langle ij \rangle} \left( S_i^x S_j^x + S_i^y S_j^y + S_i^z S_j^z \right)
+\end{equation}
+
+The sign convention: $J > 0$ means \emph{ferromagnetic} coupling (parallel spins lower energy). This is opposite to the antiferromagnetic convention where $J > 0$ favors antiparallel alignment.
+
+\textbf{Dzyaloshinskii-Moriya (DM) Interaction (Second Term):}
+\begin{equation}
+\mathcal{H}_{\text{DM}} = \sum_{\langle ij \rangle} \bm{D}_{ij} \cdot \left(\bm{S}_i \times \bm{S}_j\right)
+\end{equation}
+
+Expanding the cross product:
+\begin{equation}
+\bm{S}_i \times \bm{S}_j = 
+\begin{pmatrix}
+S_i^y S_j^z - S_i^z S_j^y \\
+S_i^z S_j^x - S_i^x S_j^z \\
+S_i^x S_j^y - S_i^y S_j^x
+\end{pmatrix}
+\end{equation}
+
+The DM interaction is \textbf{antisymmetric}: $\bm{D}_{ij} = -\bm{D}_{ji}$, so the ordering of sites $i,j$ matters.
+\end{derivation}
+
+\subsection{DM Vector Constraints from Symmetry}
+
+\begin{assumption}[title={Moriya's Rules Applied to Pyrochlore}]
+In the pyrochlore structure ($Fd\bar{3}m$, No.~227):
+\begin{itemize}
+    \item Each nearest-neighbor bond lies on a $C_2$ axis
+    \item The bond midpoint is the inversion center for that axis
+    \item $\bm{D}_{ij}$ must be perpendicular to the bond direction
+    \item $\bm{D}_{ij}$ lies in the plane containing the bond and the $C_2$ axis
+\end{itemize}
+
+The six DM vectors on a single tetrahedron are related by $C_3$ rotation about $[111]$. Only the magnitude $D = |\bm{D}_{ij}|$ is a free parameter.
+\end{assumption}
+
+\subsection{Parameter Values and Sources}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Parameter & Value & Units & Source \\
+\midrule
+$J$ (exchange) & 8.22 & meV & Onose et al. 2010 (INS on Lu$_2$V$_2$O$_7$) \\
+$D/J$ (DM ratio) & 0.32 & -- & Thermal Hall fit (Lu$_2$V$_2$O$_7$) \\
+$D$ (DM strength) & 2.63 & meV & $D = 0.32 \times J$ \\
+$a$ (lattice constant) & 9.89 & \AA & Gardner et al. 2010 \\
+$T_C$ (Curie temp.) & 70 & K & Ideue et al. 2012 \\
+\bottomrule
+\end{tabular}
+\caption{Model parameters and their experimental sources.}
+\label{tab:params}
+\end{table}
+
+\begin{assumption}[title={Parameter Transfer Assumption}]
+\textbf{Critical caveat:} No direct measurements of $J$ or $D$ exist for Y$_2$V$_2$O$_7$ itself. Parameters are \emph{transferred} from Lu$_2$V$_2$O$_7$ based on:
+\begin{itemize}
+    \item Similar $T_C \approx 70$ K
+    \item Same V$^{4+}$ ($3d^1$, $S=1/2$) electronic configuration
+    \item Similar lattice constants (9.89 vs 9.93 \AA)
+\end{itemize}
+
+\textbf{Uncertainty:} The V--O--V bond angle differs by $1$--$2^\circ$ due to different A-site ionic radii (Y$^{3+}$ vs Lu$^{3+}$), potentially shifting $D/J$ by $\pm 20\%$.
+
+\textbf{Robustness:} The Weyl crossing persists over $0.1 \lesssim D/J \lesssim 0.6$, so the topology is robust to this uncertainty.
+\end{assumption}
+
+%% ============================================================
+\section{Holstein-Primakoff Transformation}
+%% ============================================================
+
+\subsection{The Transformation}
+
+To map the spin problem to a bosonic magnon problem, we use the Holstein-Primakoff (HP) transformation:
+
+\begin{derivation}[title={Holstein-Primakoff Mapping}]
+For a spin $S$ at site $i$, define bosonic operators $a_i, a_i^\dagger$ satisfying $[a_i, a_j^\dagger] = \delta_{ij}$. The exact transformation is:
+
+\begin{align}
+S_i^+ &= \sqrt{2S} \sqrt{1 - \frac{a_i^\dagger a_i}{2S}} \, a_i \\
+S_i^- &= \sqrt{2S} \, a_i^\dagger \sqrt{1 - \frac{a_i^\dagger a_i}{2S}} \\
+S_i^z &= S - a_i^\dagger a_i
+\end{align}
+
+where $S^\pm = S^x \pm i S^y$.
+
+\textbf{Linear Spin-Wave Approximation:} Expand the square root to leading order in $1/S$:
+\begin{equation}
+\sqrt{1 - \frac{n_i}{2S}} \approx 1 - \frac{n_i}{4S} - \frac{n_i^2}{32S^2} - \ldots
+\end{equation}
+
+Keeping only the leading term ($n_i/S \ll 1$, i.e., low magnon density):
+\begin{equation}
+\boxed{
+S_i^+ \approx \sqrt{2S}\, a_i, \quad
+S_i^- \approx \sqrt{2S}\, a_i^\dagger, \quad
+S_i^z = S - a_i^\dagger a_i
+}
+\end{equation}
+
+This is \textbf{exact} for $S \to \infty$ and an approximation for finite $S$.
+\end{derivation}
+
+\begin{assumption}[title={Validity for $S = 1/2$}]
+\textbf{Critical caveat:} V$^{4+}$ has $S = 1/2$, the \emph{smallest possible} spin. LSWT corrections scale as $1/S$, so quantum corrections are expected to be $\sim 100\%$ nominally.
+
+\textbf{Mitigating factors:}
+\begin{itemize}
+    \item Prior $1/S$ studies of Lu$_2$V$_2$O$_7$ show actual renormalization is $\sim 20\%$ due to partial cancellation
+    \item The Weyl crossing is \emph{topologically protected} by $C_3$ symmetry --- interactions can shift $t_W$ and $\omega_W$ but \emph{cannot gap} the crossing
+\end{itemize}
+\end{assumption}
+
+\subsection{Substitution into the Hamiltonian}
+
+\begin{derivation}[title={LSWT Hamiltonian Construction}]
+Substituting the HP transformation into $\mathcal{H}$:
+
+\textbf{Heisenberg term:}
+\begin{align}
+\bm{S}_i \cdot \bm{S}_j &= S_i^z S_j^z + \frac{1}{2}(S_i^+ S_j^- + S_i^- S_j^+) \\
+&= (S - n_i)(S - n_j) + S(a_i a_j^\dagger + a_i^\dagger a_j) \\
+&\approx S^2 - S(n_i + n_j) + S(a_i a_j^\dagger + a_i^\dagger a_j) + O(a^4)
+\end{align}
+
+The constant $S^2$ is the classical ground state energy. The linear terms vanish for the ferromagnetic ground state (no sublattice canting). The bilinear terms give the magnon hopping.
+
+\textbf{DM term:} Similarly generates off-diagonal magnon hopping with complex (imaginary) matrix elements.
+
+The full bilinear Hamiltonian in $k$-space is:
+\begin{equation}
+\mathcal{H}_{\text{SW}} = \frac{1}{2} \sum_{\bm{k}} \bm{\Psi}_{\bm{k}}^\dagger 
+\begin{pmatrix}
+A(\bm{k}) & B(\bm{k}) \\
+B^*(-\bm{k}) & A^T(-\bm{k})
+\end{pmatrix}
+\bm{\Psi}_{\bm{k}}
+\end{equation}
+
+where $\bm{\Psi}_{\bm{k}}^\dagger = (a_1^\dagger(\bm{k}), \ldots, a_4^\dagger(\bm{k}), a_1(-\bm{k}), \ldots, a_4(-\bm{k}))$ is the Nambu spinor for 4 sublattices.
+\end{derivation}
+
+\begin{keyresult}[title={Simplification for Collinear Ferromagnet}]
+For the collinear ferromagnetic ground state (all spins parallel along a global axis):
+\begin{itemize}
+    \item The anomalous terms vanish: $B(\bm{k}) = 0$
+    \item The $8 \times 8$ BdG problem reduces to a $4 \times 4$ Hermitian eigenvalue problem
+\end{itemize}
+
+This simplification occurs because HP expansion in a uniform frame produces only number-conserving hopping.
+\end{keyresult}
+
+%% ============================================================
+\section{Bogoliubov Diagonalization}
+%% ============================================================
+
+\subsection{The Colpa Algorithm}
+
+\begin{derivation}[title={Paraunitary Diagonalization}]
+The BdG Hamiltonian must be diagonalized while preserving the bosonic commutation relations. This requires a \emph{paraunitary} transformation $\mathcal{T}(\bm{k})$ satisfying:
+\begin{equation}
+\mathcal{T}^\dagger \Sigma_z \mathcal{T} = \Sigma_z
+\end{equation}
+where $\Sigma_z = \text{diag}(1,1,1,1,-1,-1,-1,-1)$ is the bosonic metric.
+
+\textbf{Colpa's Algorithm (1978):}
+\begin{enumerate}
+    \item Form $\Sigma_z H(\bm{k})$ where $H$ is the BdG matrix
+    \item Compute eigenvalues and eigenvectors of $\Sigma_z H$
+    \item Eigenvalues come in $\pm$ pairs; positive ones are magnon energies
+    \item Normalize eigenvectors with respect to the $\Sigma_z$ metric
+\end{enumerate}
+
+For our collinear FM case with $B = 0$, this reduces to standard Hermitian diagonalization of the $4 \times 4$ matrix $A(\bm{k})$.
+\end{derivation}
+
+\subsection{Numerical Implementation Details}
+
+\begin{itemize}
+    \item High-symmetry path: $\Gamma \to X \to W \to L \to \Gamma$ (FCC convention)
+    \item Sampling: 300 points per segment
+    \item Weyl point search: 5000 points along $\Gamma \to L$, gap threshold $0.05$ meV
+    \item Magnon Hall conductivity: $20 \times 20 \times 20$ Monkhorst-Pack grid
+\end{itemize}
+
+%% ============================================================
+\section{Berry Curvature Calculation}
+%% ============================================================
+
+\subsection{Definition and Physical Meaning}
+
+The Berry curvature is the ``magnetic field'' in $k$-space:
+
+\begin{equation}
+\bm{\Omega}_n(\bm{k}) = i \langle \nabla_{\bm{k}} u_{n\bm{k}} | \times | \nabla_{\bm{k}} u_{n\bm{k}} \rangle
+\end{equation}
+
+\begin{derivation}[title={Kubo Formula for Berry Curvature}]
+A gauge-invariant expression uses the velocity matrix elements:
+\begin{equation}
+\boxed{
+\Omega_n^{\alpha\beta}(\bm{k}) = -2 \, \text{Im} \sum_{m \neq n}
+\frac{\langle n\bm{k} | \partial_{k_\alpha} \mathcal{H} | m\bm{k} \rangle
+      \langle m\bm{k} | \partial_{k_\beta} \mathcal{H} | n\bm{k} \rangle}
+     {[E_m(\bm{k}) - E_n(\bm{k})]^2}
+}
+\end{equation}
+
+\textbf{Why gauge-invariant?} Depends only on:
+\begin{itemize}
+    \item Energy differences $E_m - E_n$ (gauge-invariant)
+    \item Off-diagonal velocity matrix elements (invariant under phase changes of eigenstates)
+\end{itemize}
+
+\textbf{Numerical implementation:}
+\begin{itemize}
+    \item Derivatives $\partial_{k_\alpha} \mathcal{H}$ computed by finite differences
+    \item Step size: $\delta k = 2 \times 10^{-5}$ \AA$^{-1}$
+    \item Sum over $m$ includes all three other magnon branches
+\end{itemize}
+\end{derivation}
+
+\subsection{Berry Curvature Near a Weyl Point}
+
+\begin{keyresult}[title={Monopole Structure}]
+A Weyl point acts as a \emph{Berry monopole} in $k$-space:
+\begin{equation}
+\bm{\Omega}_n(\bm{k}) \propto \frac{\hat{\bm{r}}}{|\bm{k} - \bm{k}_W|^2}
+\end{equation}
+
+This $1/r^2$ divergence is the signature of a topological defect. The color map in Fig.~7a of the paper shows this monopole structure.
+\end{keyresult}
+
+%% ============================================================
+\section{Chern Number and Topological Charge}
+%% ============================================================
+
+\subsection{Definition}
+
+\begin{equation}
+\boxed{
+\mathcal{C} = \frac{1}{2\pi} \oint_{S^2} \bm{\Omega}_n(\bm{k}) \cdot d\bm{S}
+}
+\end{equation}
+
+This counts the net Berry flux through any closed surface enclosing the Weyl point.
+
+\begin{derivation}[title={Numerical Integration}]
+\textbf{Method:}
+\begin{enumerate}
+    \item Define spherical coordinates $(\theta, \phi)$ centered at $\bm{k}_W$
+    \item Sample $\bm{\Omega}_n \cdot \hat{r}$ on a $20 \times 40$ angular grid
+    \item Integrate using trapezoidal rule on the sphere surface:
+    \begin{equation}
+    \mathcal{C}(r) = \frac{1}{2\pi} \sum_{i,j} \Omega_r(\theta_i, \phi_j) \cdot r^2 \sin\theta_i \, \Delta\theta \, \Delta\phi
+    \end{equation}
+\end{enumerate}
+
+\textbf{Convergence test:} Verified for radii up to $r = 0.10$ \AA$^{-1}$ (within distance to nearest other crossing)
+
+\textbf{Result:} $\mathcal{C} = +1$ to numerical precision for all tested radii
+\end{derivation}
+
+\subsection{Nielsen-Ninomiya Constraint}
+
+\begin{keyresult}[title={Partner Weyl Points}]
+The Nielsen-Ninomiya theorem requires:
+\begin{equation}
+\sum_{\text{all Weyl points}} \chi_i = 0
+\end{equation}
+
+\textbf{Our finding:}
+\begin{itemize}
+    \item 4 Weyl points along $\langle 111 \rangle$ directions with $\chi = +1$
+    \item 4 partner Weyl points near $W$ points with $\chi = -1$
+    \item Total chirality: $4(+1) + 4(-1) = 0$ $\checkmark$
+\end{itemize}
+
+Located by $40 \times 40 \times 40$ grid scan over full BZ.
+\end{keyresult}
+
+%% ============================================================
+\section{$k \cdot p$ Theory for Weyl Point}
+%% ============================================================
+
+\subsection{Two-Band Effective Hamiltonian}
+
+Near the Weyl point, project onto bands 2 and 3:
+
+\begin{equation}
+\boxed{
+H_{k\cdot p}(\delta\bm{k}) = \omega_W \mathbb{1}_2 + v_\parallel \delta k_\parallel \sigma_z + v_\perp (\delta k_x \sigma_x + \delta k_y \sigma_y)
+}
+\end{equation}
+
+\begin{derivation}[title={Symmetry Constraints}]
+Why this form?
+
+\textbf{$C_3$ symmetry along $[111]$:}
+\begin{itemize}
+    \item $\sigma_z$ term is $C_3$-invariant (diagonal in the basis)
+    \item $\sigma_{x,y}$ terms form the 2D irrep of $C_3$
+    \item Bands 2 and 3 belong to \emph{different} irreps ($A$ and $E$)
+    \item Therefore $\sigma_{x,y}$ terms cannot mix them at $k_\parallel = 0$
+    \item The crossing is \emph{protected} --- no mass term $\propto \sigma_z$ can arise from $C_3$-preserving perturbations
+\end{itemize}
+\end{derivation}
+
+\subsection{Chirality from $k \cdot p$}
+
+\begin{equation}
+\chi = \text{sgn}(v_\parallel v_\perp^2) = \text{sgn}(v_\parallel)
+\end{equation}
+
+For our case: $v_\parallel > 0$ so $\chi = +1$, consistent with Berry integration.
+
+\subsection{Fitting Procedure}
+
+\begin{derivation}[title={$k \cdot p$ Parameter Extraction}]
+\textbf{Method:}
+\begin{enumerate}
+    \item Extract LSWT band energies in a window of $\pm 8\%$ of $|\Gamma L|$ centered on Weyl point
+    \item Fit two-band eigenvalues $E_\pm = \omega_W \pm \sqrt{v_\parallel^2 \delta k_\parallel^2 + v_\perp^2 \delta k_\perp^2}$
+    \item Minimize RMS deviation using Nelder-Mead simplex
+\end{enumerate}
+
+\textbf{Results at $D/J = 0.32$:}
+\begin{itemize}
+    \item $t_W \approx 0.55$ (fractional position along $\Gamma \to L$)
+    \item $\omega_W \approx 29$ meV
+    \item $v_\parallel \approx v_\perp \approx 10$ meV$\cdot$\AA\ (nearly isotropic cone)
+\end{itemize}
+
+\textbf{Agreement:} Direct band-structure fits and $k \cdot p$ fits agree within $\sim 10\%$
+\end{derivation}
+
+%% ============================================================
+\section{Surface Arc Calculation}
+%% ============================================================
+
+\subsection{Slab Geometry}
+
+\begin{derivation}[title={Slab Construction}]
+\textbf{Setup:}
+\begin{itemize}
+    \item 50 unit cells stacked along $a_3$ ([110] direction)
+    \item Open boundary conditions at top/bottom surfaces
+    \item Periodic boundary conditions in the two in-plane directions
+\end{itemize}
+
+\textbf{Hamiltonian:}
+\begin{itemize}
+    \item Fourier transform only in 2 periodic directions
+    \item Retain real-space hopping along finite direction
+    \item Results in $200 \times 200$ matrix at each $\bm{k}_\parallel$
+\end{itemize}
+
+\textbf{Surface spectral weight:}
+\begin{equation}
+w_{\text{surf}}(n, \bm{k}_\parallel) = \sum_{l \in \text{surface}} |\psi_n(l, \bm{k}_\parallel)|^2
+\end{equation}
+where sum is over the outermost 2 unit cells on each surface.
+\end{derivation}
+
+\begin{keyresult}[title={Surface Arc Detection}]
+Surface arcs are visible as branches with elevated surface weight that:
+\begin{itemize}
+    \item Connect projections of Weyl points onto surface BZ
+    \item Cross the bulk Weyl energy $\omega_W \approx 29$ meV
+    \item Are topologically protected (cannot be removed without closing bulk gap)
+\end{itemize}
+\end{keyresult}
+
+%% ============================================================
+\section{Magnon Hall Conductivity}
+%% ============================================================
+
+\subsection{Kubo Formula for Thermal Hall}
+
+\begin{equation}
+\boxed{
+\kappa^{xy} = -\frac{k_B^2 T}{\hbar} \frac{1}{V} \sum_{n,\bm{k}} c_2(n_B(\varepsilon_{n\bm{k}})) \, \Omega_{n\bm{k}}^{xy}
+}
+\end{equation}
+
+\begin{derivation}[title={Component Definitions}]
+\textbf{Bose-Einstein distribution:}
+\begin{equation}
+n_B(\varepsilon) = \frac{1}{e^{\varepsilon/k_B T} - 1}
+\end{equation}
+
+\textbf{Magnon Hall weight function:}
+\begin{equation}
+c_2(x) = (1+x)\left[\ln\frac{1+x}{x}\right]^2 - (\ln x)^2 - 2\,\text{Li}_2(-x)
+\end{equation}
+where $\text{Li}_2$ is the polylogarithm.
+
+This function weights the Berry curvature contribution by the thermal occupation.
+\end{derivation}
+
+\subsection{Comparison with Experiment}
+
+\begin{assumption}[title={Limitations of LSWT Magnon Hall Calculation}]
+\textbf{Observed discrepancy:} Theory exceeds experiment by factor $\sim 200$
+
+\textbf{Reasons for overestimate:}
+\begin{enumerate}
+    \item Magnon-phonon scattering (not in LSWT) reduces $|\kappa^{xy}|$
+    \item Magnon-magnon interactions absent
+    \item Finite magnon lifetime from extrinsic scattering
+    \item Comparison is with Lu$_2$V$_2$O$_7$, not Y$_2$V$_2$O$_7$
+\end{enumerate}
+
+\textbf{Qualitative agreement:}
+\begin{itemize}
+    \item Both theory and experiment show rise from zero at low $T$
+    \item Confirms Berry curvature from Weyl magnon as dominant source
+\end{itemize}
+\end{assumption}
+
+%% ============================================================
+\section{RIXS Formalism}
+%% ============================================================
+
+\subsection{Kramers-Heisenberg Formula}
+
+\begin{equation}
+\boxed{
+\frac{d^2\sigma}{d\Omega\, d\omega_f} = \sum_f \left|
+\sum_\nu \frac{\langle f | \mathcal{O}_{\epsilon_f}^\dagger | \nu \rangle \langle \nu | \mathcal{O}_{\epsilon_i} | g \rangle}
+{E_g + \hbar\omega_i - E_\nu + i\Gamma_c/2}
+\right|^2 \delta(E_f - E_g - \hbar\omega)
+}
+\end{equation}
+
+\begin{derivation}[title={Physical Interpretation}]
+\textbf{States:}
+\begin{itemize}
+    \item $|g\rangle$: Ground state (energy $E_g$)
+    \item $|\nu\rangle$: Intermediate state with core hole (energy $E_\nu$)
+    \item $|f\rangle$: Final state (energy $E_f$)
+\end{itemize}
+
+\textbf{Process at V $L_3$ edge:}
+\begin{enumerate}
+    \item Incident photon ($\hbar\omega_i \approx 518$ eV) excites $2p_{3/2} \to 3d$
+    \item Intermediate state: $2p^5 3d^2$ configuration
+    \item Core hole decays: $3d \to 2p$ photon emission
+    \item Final state: excited $3d$ configuration
+\end{enumerate}
+
+\textbf{Resonance:} Cross-section peaks when $E_g + \hbar\omega_i \approx E_\nu$
+\end{derivation}
+
+\subsection{Polarization Selection Rules}
+
+\begin{keyresult}[title={Channel Separation}]
+\textbf{$\sigma \to \pi$ (spin-flip):}
+\begin{itemize}
+    \item Effective operator carries $\Delta m = \pm 1$
+    \item Selects $\Delta S_z = \pm 1$ final states
+    \item Contains: Exchange peak (8 meV), SOC peak (22 meV)
+\end{itemize}
+
+\textbf{$\sigma \to \sigma$ (spin-conserving):}
+\begin{itemize}
+    \item Symmetric operator, $\Delta S_z = 0$
+    \item Contains: Phonon sideband (100 meV)
+\end{itemize}
+
+This polarimetric separation is the \textbf{central experimental prediction}.
+\end{keyresult}
+
+%% ============================================================
+\section{V$^{4+}$--V$^{4+}$ Dimer Exact Diagonalization}
+%% ============================================================
+
+\subsection{Hilbert Space Construction}
+
+\begin{derivation}[title={State Counting}]
+\textbf{Single-site initial states:}
+\begin{equation}
+\binom{10}{1} = 10 \text{ states (one electron in 5 $d$ orbitals $\times$ 2 spins)}
+\end{equation}
+
+\textbf{Two-site initial states:}
+\begin{equation}
+10 \times 10 = 100 \text{ states before symmetry}
+\end{equation}
+After including exchange coupling and SOC: 190 states
+
+\textbf{Intermediate states (one core hole):}
+\begin{itemize}
+    \item Core hole can be on either site
+    \item Configuration: $2p^5 3d^2$ at one site, $3d^1$ at other
+    \item Total: 4560 states
+\end{itemize}
+\end{derivation}
+
+\subsection{Hamiltonian Parameters}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Parameter & Value & Notes \\
+\midrule
+$10Dq$ & 1.90 eV & Octahedral splitting \\
+$\delta_{\text{trig}}$ & 30 meV & Trigonal distortion \\
+$\zeta_{3d}$ & 30 meV & 3d spin-orbit coupling \\
+$\zeta_{2p}$ & 4.65 eV & 2p spin-orbit coupling \\
+$\Gamma_c$ & 165 meV (HWHM) & Core-hole lifetime \\
+$F^2_{dd}$ & 8.102 eV & Slater integral (80\% atomic) \\
+$F^4_{dd}$ & 5.083 eV & Slater integral (80\% atomic) \\
+$J$ & 8.22 meV & Inter-site exchange \\
+$U_{dd}$ & 3.0 eV & Hubbard U \\
+\bottomrule
+\end{tabular}
+\caption{EDRIXS calculation parameters}
+\end{table}
+
+\begin{assumption}[title={Slater Integral Scaling}]
+Atomic Slater integrals from Cowan's code are scaled to 80\% to account for configuration interaction screening. This is standard practice but introduces $\sim 10$--$20\%$ uncertainty in peak positions.
+\end{assumption}
+
+\subsection{Phonon Coupling}
+
+\begin{derivation}[title={Displaced Oscillator Model}]
+\begin{equation}
+\mathcal{H}_{\text{ph}} = \hbar\omega_{\text{ph}} b^\dagger b + g(b + b^\dagger) \hat{n}_d
+\end{equation}
+
+\textbf{Parameters:}
+\begin{itemize}
+    \item $\hbar\omega_{\text{ph}} = 100$ meV (V--O breathing mode)
+    \item $g = 35$ meV (linear coupling)
+    \item Huang-Rhys factor: $S_{HR} = g^2/(\hbar\omega_{\text{ph}})^2 \approx 0.12$
+\end{itemize}
+
+\textbf{Truncation:} Phonon Hilbert space limited to 4 quanta (converged at this coupling)
+\end{derivation}
+
+%% ============================================================
+\section{Summary of Key Predictions}
+%% ============================================================
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Observable & Predicted Value & Current Resolution & Detectable? \\
+\midrule
+Weyl energy $\omega_W$ & 29 meV & 30 meV FWHM & Marginal \\
+Exchange peak & 8 meV & 30 meV FWHM & No (need $<10$ meV) \\
+SOC peak & 22 meV & 30 meV FWHM & Yes \\
+Phonon sideband & 100 meV & 30 meV FWHM & Yes \\
+\bottomrule
+\end{tabular}
+\caption{Experimental detectability at current RIXS resolution}
+\end{table}
+
+\begin{keyresult}[title={Main Conclusions}]
+\begin{enumerate}
+    \item \textbf{Weyl magnon exists} at $\omega_W \approx 29$ meV with $\mathcal{C} = +1$
+    \item \textbf{Protected by $C_3$ symmetry} --- robust to parameter uncertainties
+    \item \textbf{Polarimetric RIXS} can separate magnetic (spin-flip) from lattice (spin-conserving) excitations
+    \item \textbf{SOC and phonon peaks} testable now; exchange peak requires next-gen resolution
+\end{enumerate}
+\end{keyresult}
+
+%% ============================================================
+\section{Potential Questions and Responses}
+%% ============================================================
+
+\subsection{On LSWT Validity}
+
+\textbf{Q: How can LSWT be trusted for $S = 1/2$?}
+
+A: While quantum corrections are nominally $O(1)$, the \emph{topological} aspects are protected:
+\begin{itemize}
+    \item Weyl point existence: protected by $C_3$ symmetry (cannot be gapped)
+    \item Chern number: topologically quantized (cannot change without gap closing)
+    \item Interactions shift $\omega_W$ and $t_W$ but preserve the crossing
+    \item Prior $1/S$ studies show $\sim 20\%$ renormalization, not $100\%$
+\end{itemize}
+
+\subsection{On Parameter Transfer}
+
+\textbf{Q: Why use Lu$_2$V$_2$O$_7$ parameters for Y$_2$V$_2$O$_7$?}
+
+A: Best available data. Key mitigations:
+\begin{itemize}
+    \item Similar $T_C$ suggests similar $J$
+    \item DM ratio affects position but not existence of Weyl point
+    \item Topology persists over $D/J \in [0.1, 0.6]$ --- robust to $\pm 20\%$ uncertainty
+\end{itemize}
+
+\subsection{On Magnon Hall Discrepancy}
+
+\textbf{Q: Why is theory 200$\times$ larger than experiment?}
+
+A: LSWT gives the \emph{intrinsic} contribution only. Missing physics:
+\begin{itemize}
+    \item Magnon-phonon scattering
+    \item Magnon-magnon interactions
+    \item Finite magnon lifetime
+    \item Comparison is with different compound (Lu vs Y)
+\end{itemize}
+The qualitative trend (rise from zero, Berry curvature origin) is correct.
+
+\subsection{On RIXS Momentum Resolution}
+
+\textbf{Q: Can RIXS actually probe the Weyl point at finite $k$?}
+
+A: Current soft X-ray RIXS achieves $\sim 0.03$ \AA$^{-1}$ momentum resolution, sufficient to map dispersion across significant BZ fraction. The dimer calculation gives the zone-center response; momentum-resolved extension is left to future work.
+
+\end{document}
