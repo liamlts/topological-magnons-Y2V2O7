@@ -103,7 +103,7 @@ core site A, `[20:26]` 2p core site B.
 
 ## Further reading
 
-- [`topological-magnons-Y2V2O7` root](../../) — full Y₂V₂O₇ paper and
+- [`topological-magnons-Y2V2O7` root](../) — full Y₂V₂O₇ paper and
   calculation pipeline.
 - Pure two-site cluster (no ligand bath):
   [`liamlts/2-site-cluster-Y2V2O7`](https://github.com/liamlts/2-site-cluster-Y2V2O7).
