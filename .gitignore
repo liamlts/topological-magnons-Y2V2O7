@@ -24,3 +24,10 @@ Thumbs.db
 
 # PNG figures (keep PDFs only for version control)
 Figures/*.png
+# ...except the hero previews embedded in the README
+!Figures/Y2V2O7_band_overlay_DJ.png
+!Figures/fig_weyl_cone_3D.png
+!Figures/fig_berry_chern.png
+!Figures/fig_phase_diagram.png
+!Figures/fig_rixs_2d_map.png
+!Figures/fig_magnon_hall.png
