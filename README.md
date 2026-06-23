@@ -1,24 +1,24 @@
 # Topological Weyl Magnons in Y₂V₂O₇: Code and Data
 
-Code repository for the paper:
-**"Topological Weyl Magnons in Y₂V₂O₇: Polarimetric RIXS Signatures and Thermal Hall Response"**
+Code repository for the paper
+"Topological Weyl Magnons in Y₂V₂O₇: Polarimetric RIXS Signatures and Thermal Hall Response".
 
 ## Overview
 
-The pyrochlore ferromagnet Y₂V₂O₇ hosts **topological Weyl magnons**: linear
+The pyrochlore ferromagnet Y₂V₂O₇ hosts topological Weyl magnons: linear
 band-touching points in the magnon spectrum that act as sources and sinks of
 Berry curvature, the bosonic analogue of electronic Weyl semimetals. This
-repository contains all computational scripts to reproduce the manuscript
-figures. The calculations fall into four categories:
+repository holds the scripts that reproduce the manuscript figures. The
+calculations fall into four categories:
 
-1. **Linear Spin-Wave Theory (LSWT)** — magnon band structure of the
-   Dzyaloshinskii–Moriya pyrochlore ferromagnet via Holstein–Primakoff +
+1. Linear spin-wave theory (LSWT): magnon band structure of the
+   Dzyaloshinskii–Moriya pyrochlore ferromagnet via Holstein–Primakoff and
    Colpa–Bogoliubov diagonalization.
-2. **Topological analysis** — Berry curvature, Chern numbers, and surface
-   magnon arcs; a *k·p* effective model characterizes the Weyl point chirality.
-3. **Thermal (magnon) Hall response** — Kubo formula for κ_xy(T), compared
+2. Topological analysis: Berry curvature, Chern numbers, and surface
+   magnon arcs, with a *k·p* effective model for the Weyl point chirality.
+3. Thermal (magnon) Hall response: Kubo formula for κ_xy(T), compared
    against transport data.
-4. **Cluster Exact Diagonalization (EDRIXS)** — Kramers–Heisenberg RIXS
+4. Cluster exact diagonalization (EDRIXS): Kramers–Heisenberg RIXS
    cross-sections for single-site V⁴⁺ and two-site V⁴⁺–V⁴⁺ dimer models,
    including polarization selection rules.
 
@@ -26,17 +26,18 @@ figures. The calculations fall into four categories:
 
 | Observable | Predicted | RIXS resolution needed | Detectable now? |
 |---|---|---|---|
-| Weyl magnon energy ω_W | **29 meV**, Chern 𝒞 = +1 | 30 meV FWHM | marginal |
-| SOC d–d peak | 22 meV | <30 meV | **yes** |
-| Phonon sideband | 100 meV | <30 meV | **yes** |
+| Weyl magnon energy ω_W | 29 meV, Chern 𝒞 = +1 | 30 meV FWHM | marginal |
+| SOC d–d peak | 22 meV | <30 meV | yes |
+| Phonon sideband | 100 meV | <30 meV | yes |
 | Exchange peak | 8 meV | <10 meV | needs next-gen |
 
-The Weyl point is **protected by C₃ symmetry** (robust to parameter
-uncertainty), and **polarimetric RIXS** separates magnetic (spin-flip) from
-lattice (spin-conserving) excitations. Full derivations — Hamiltonian, DM-vector
-symmetry constraints, Colpa algorithm, Berry-curvature and Chern-number
-definitions, *k·p* fit, surface-arc slab geometry, Kubo formula, and the dimer
-ED — are in [`calculations_explained.pdf`](calculations_explained.pdf).
+The Weyl point is protected by C₃ symmetry, so it is robust to parameter
+uncertainty, and polarimetric RIXS separates magnetic (spin-flip) from
+lattice (spin-conserving) excitations. Full derivations are in
+[`calculations_explained.pdf`](calculations_explained.pdf): the Hamiltonian,
+DM-vector symmetry constraints, the Colpa algorithm, Berry-curvature and
+Chern-number definitions, the *k·p* fit, surface-arc slab geometry, the Kubo
+formula, and the dimer ED.
 
 ## Results
 
@@ -46,19 +47,19 @@ Representative figures (PNG previews; vector PDFs for all panels are in
 | Magnon bands (LSWT) | Weyl cone (3D) | Berry curvature / Chern |
 |---|---|---|
 | ![bands](Figures/Y2V2O7_band_overlay_DJ.png) | ![weyl cone](Figures/fig_weyl_cone_3D.png) | ![berry](Figures/fig_berry_chern.png) |
-| **Topological phase diagram** | **RIXS 2D map** | **Magnon thermal Hall κ_xy(T)** |
+| Topological phase diagram | RIXS 2D map | Magnon thermal Hall κ_xy(T) |
 | ![phase diagram](Figures/fig_phase_diagram.png) | ![rixs map](Figures/fig_rixs_2d_map.png) | ![magnon hall](Figures/fig_magnon_hall.png) |
 
-- **Magnon bands** — LSWT dispersion along the high-symmetry path for
-  representative D/J ratios; the gapped band touching is the Weyl node.
-- **Weyl cone** — linear magnon dispersion around the band-touching point
-  (ω_W ≈ 29 meV), the defining feature of a Weyl magnon.
-- **Berry curvature / Chern** — Berry-curvature concentration at the Weyl
-  point integrating to 𝒞 = +1.
-- **Phase diagram** — topological character across the (D/J) parameter space.
-- **RIXS 2D map** — simulated incident-energy vs energy-loss intensity from
+- Magnon bands: LSWT dispersion along the high-symmetry path for
+  representative D/J ratios. The gapped band touching is the Weyl node.
+- Weyl cone: linear magnon dispersion around the band-touching point at
+  ω_W ≈ 29 meV.
+- Berry curvature / Chern: Berry-curvature concentration at the Weyl
+  point, integrating to 𝒞 = +1.
+- Phase diagram: topological character across the (D/J) parameter space.
+- RIXS 2D map: simulated incident-energy vs energy-loss intensity from
   the two-site cluster ED.
-- **Thermal Hall** — predicted magnon Hall conductivity κ_xy versus
+- Thermal Hall: predicted magnon Hall conductivity κ_xy versus
   temperature, compared with experiment.
 
 ## Requirements
