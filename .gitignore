@@ -31,3 +31,7 @@ Figures/*.png
 !Figures/fig_phase_diagram.png
 !Figures/fig_rixs_2d_map.png
 !Figures/fig_magnon_hall.png
+
+# Python packaging / test caches
+*.egg-info/
+.pytest_cache/

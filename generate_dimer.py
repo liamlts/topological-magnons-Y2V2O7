@@ -21,40 +21,17 @@ Produces Figures/fig_vv_dimer.pdf — 3-panel figure:
 
 import os
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import PowerNorm
 import edrixs
 
+from y2v2o7.cluster import cf_trigonal_d, gauss_convolve
+from y2v2o7.style import use as use_style, label, save
+
 os.makedirs('Figures', exist_ok=True)
 
 # ── Uniform Nature Physics rcParams ──────────────────────────────────────────
-mpl.rcParams.update({
-    'font.family':        'sans-serif',
-    'font.sans-serif':    ['Helvetica', 'Arial', 'DejaVu Sans'],
-    'font.size':          7,
-    'axes.labelsize':     7,
-    'axes.titlesize':     7,
-    'xtick.labelsize':    6,
-    'ytick.labelsize':    6,
-    'legend.fontsize':    6,
-    'axes.linewidth':     0.5,
-    'xtick.major.width':  0.5,
-    'ytick.major.width':  0.5,
-    'xtick.major.size':   2.5,
-    'ytick.major.size':   2.5,
-    'xtick.minor.size':   1.5,
-    'ytick.minor.size':   1.5,
-    'xtick.direction':    'out',
-    'ytick.direction':    'out',
-    'lines.linewidth':    0.8,
-    'figure.dpi':         150,
-    'savefig.dpi':        600,
-    'savefig.bbox':       'tight',
-    'savefig.pad_inches': 0.02,
-    'pdf.fonttype':       42,
-    'ps.fonttype':        42,
-})
+use_style()
 
 COL1   = 3.386
 COL2   = 7.008
@@ -63,68 +40,6 @@ C_CONS = '#0073BD'
 C_PHON = '#38A12B'
 C_XCHG = '#9533BF'
 C_SUM  = '#555555'
-
-
-def label(ax, letter, dark_bg=False, x=0.025, y=0.97):
-    """Nature Physics panel label: bold 'a.' top-left, no parentheses."""
-    c = 'white' if dark_bg else 'black'
-    ax.text(x, y, f'{letter}.', transform=ax.transAxes,
-            fontsize=8, fontweight='bold', va='top', ha='left', color=c)
-
-
-def save(fig, name):
-    for ext in ('pdf', 'png'):
-        p = f'Figures/{name}.{ext}'
-        fig.savefig(p, dpi=600 if ext == 'pdf' else 300)
-        print(f'  saved {p}')
-
-
-def cf_trigonal_d(delta_trig):
-    """
-    Trigonal D3d crystal field for d-orbitals with C3 axis along [111].
-
-    H = Δ × [(L·n̂)² − L(L+1)/3],  n̂ = [1,1,1]/√3
-
-    Within t2g: splits a1g (along [111]) by +2Δ/3 and eg' by −Δ/3.
-    EDRIXS spin-orbital basis: (m=-2,↑), (m=-2,↓), …, (m=+2,↑), (m=+2,↓)
-    i.e. m increases with index, spin interleaved as (m,↑) then (m,↓).
-    """
-    l = 2
-    m_vals = np.arange(-l, l + 1, dtype=float)   # [-2,-1,0,1,2]
-    n = len(m_vals)
-
-    # L operators in the 5-dim orbital space (m from -l to +l)
-    Lp = np.zeros((n, n), dtype=complex)
-    for i in range(n - 1):
-        m = m_vals[i]
-        Lp[i + 1, i] = np.sqrt((l - m) * (l + m + 1))   # L+|m⟩ → |m+1⟩
-    Lm = Lp.conj().T
-    Lx = (Lp + Lm) / 2.0
-    Ly = (Lp - Lm) / (2j)
-    Lz = np.diag(m_vals.astype(complex))
-
-    LN = (Lx + Ly + Lz) / np.sqrt(3.0)
-    # Within the t2g subspace the full l=2 operator gives 3× the t2g splitting,
-    # so divide by 3.  Negative sign: positive delta_trig → a1g above eg' (compressed
-    # pyrochlore octahedron, consistent with Y2V2O7 DFT/optical data).
-    H5 = -(delta_trig / 3.0) * (LN @ LN - l * (l + 1) / 3.0 * np.eye(n, dtype=complex))
-
-    # Expand to 10×10 (orbital acts on spin space as identity)
-    H10 = np.zeros((10, 10), dtype=complex)
-    for i in range(n):
-        for j in range(n):
-            H10[2 * i,     2 * j    ] = H5[i, j]   # ↑↑
-            H10[2 * i + 1, 2 * j + 1] = H5[i, j]   # ↓↓
-    return H10
-
-
-def gauss_convolve(spec, sigma_eV, dE_eV):
-    """Convolve spectrum with Gaussian of given σ (eV) and grid spacing dE."""
-    hw = int(4 * sigma_eV / dE_eV) + 1
-    k  = np.arange(-hw, hw + 1) * dE_eV
-    kernel = np.exp(-0.5 * (k / sigma_eV) ** 2)
-    kernel /= kernel.sum()
-    return np.convolve(spec, kernel, mode='same')
 
 
 # ═══════════════════════════════════════════════════════════════════════════

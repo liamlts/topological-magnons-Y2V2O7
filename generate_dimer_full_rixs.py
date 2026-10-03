@@ -23,6 +23,8 @@ from matplotlib.gridspec import GridSpec
 from scipy.linalg import eigh
 import edrixs
 
+from y2v2o7.cluster import cf_trigonal_d
+
 os.makedirs('Figures', exist_ok=True)
 
 mpl.rcParams.update({
@@ -75,20 +77,6 @@ print(f"J = {J_meV:.2f} meV,  T = {T_K:.0f} K,  kBT = {kBT*1000:.2f} meV")
 
 
 # ── Crystal field + SOC ───────────────────────────────────────────────────────
-def cf_trigonal_d(delta):
-    l = 2; n = 2*l+1; mv = np.arange(-l, l+1, dtype=float)
-    Lp = np.zeros((n,n), dtype=complex)
-    for i in range(n-1): Lp[i+1,i] = np.sqrt((l-mv[i])*(l+mv[i]+1))
-    Lm = Lp.conj().T
-    LN = ((Lp+Lm)/2 + (Lp-Lm)/(2j) + np.diag(mv)) / np.sqrt(3)
-    H5 = -(delta/3)*(LN@LN - l*(l+1)/3*np.eye(n, dtype=complex))
-    H10 = np.zeros((10,10), dtype=complex)
-    for i in range(n):
-        for j in range(n):
-            H10[2*i, 2*j]     = H5[i,j]
-            H10[2*i+1, 2*j+1] = H5[i,j]
-    return H10
-
 cf_mat  = edrixs.cf_cubic_d(ten_dq) + cf_trigonal_d(delta_trig)
 soc_mat = edrixs.atom_hsoc('d', zeta_d)
 hd_site = cf_mat + soc_mat   # 10×10 single-site d Hamiltonian

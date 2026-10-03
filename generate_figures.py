@@ -15,230 +15,49 @@ Nature Physics panel-label convention: bold 'a.' top-left, no parentheses.
 
 import os
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
 from matplotlib.colors import PowerNorm
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 from scipy.linalg import eigh
-from scipy.optimize import curve_fit
 from collections import defaultdict
 
+from y2v2o7.lattice import (a_cub, J_FM, n_sub, r_sub, bonds, nnn_bonds, n_hat,
+                            b1, b2, b3, G_pt, X_pt, W_pt, L_pt, frac2cart)
+from y2v2o7.lswt import (build_Hq, build_Hq_J2, build_H_slab,
+                         berry_curvature_vec, berry_curvature_all,
+                         chern_number_sphere, find_crossings,
+                         fit_cone_velocities, kp_projection,
+                         representative_crossing, PAULI as pauli,
+                         bose, c2_bose, ff2_V4)
+from y2v2o7.style import (use as use_style, label, save, COL1, COL2,
+                          C_BLUE, C_RED, C_ORANGE, C_GREEN, C_PURPLE,
+                          C_GREY, C_BLACK)
+
 os.makedirs('Figures', exist_ok=True)
+use_style()
 
-# ── Publication rcParams ─────────────────────────────────────────────────────
-mpl.rcParams.update({
-    'font.family':        'sans-serif',
-    'font.sans-serif':    ['Helvetica', 'Arial', 'DejaVu Sans'],
-    'font.size':          7,
-    'axes.labelsize':     7,
-    'axes.titlesize':     7,
-    'xtick.labelsize':    6,
-    'ytick.labelsize':    6,
-    'legend.fontsize':    6,
-    'axes.linewidth':     0.5,
-    'xtick.major.width':  0.5,
-    'ytick.major.width':  0.5,
-    'xtick.major.size':   2.5,
-    'ytick.major.size':   2.5,
-    'xtick.minor.size':   1.5,
-    'ytick.minor.size':   1.5,
-    'xtick.direction':    'out',
-    'ytick.direction':    'out',
-    'lines.linewidth':    0.8,
-    'figure.dpi':         150,
-    'savefig.dpi':        600,
-    'savefig.bbox':       'tight',
-    'savefig.pad_inches': 0.02,
-    'pdf.fonttype':       42,
-    'ps.fonttype':        42,
-})
-
-COL1 = 3.386   # 8.6 cm — single column
-COL2 = 7.008   # 17.8 cm — double column
-
-C_BLUE   = '#0073BD'
-C_RED    = '#D92B2B'
-C_ORANGE = '#ED8C00'
-C_GREEN  = '#38A12B'
-C_PURPLE = '#9533BF'
-C_GREY   = '#808080'
-C_BLACK  = '#1A1A1A'
 BRANCH_COLORS = [C_BLUE, C_RED, C_ORANGE, C_GREEN, C_PURPLE, C_GREY, C_BLACK]
 PATH_LABELS   = ['Γ', 'X', 'W', 'L', 'Γ']
 
-
-def label(ax, letter, dark_bg=False, x=0.025, y=0.97):
-    """Add Nature Physics panel label: bold 'a.' at top-left."""
-    color = 'white' if dark_bg else 'black'
-    bbox = dict(facecolor='k', alpha=0.55, pad=1.5,
-                boxstyle='round,pad=0.2', edgecolor='none') if dark_bg else None
-    ax.text(x, y, f'{letter}.', transform=ax.transAxes,
-            fontsize=8, fontweight='bold', va='top', ha='left', color=color,
-            bbox=bbox)
-
-
-def save(fig, name):
-    for ext in ('pdf', 'png'):
-        path = f'Figures/{name}.{ext}'
-        fig.savefig(path, dpi=600 if ext == 'pdf' else 300)
-        print(f'  saved {path}')
-
-
-# ── Berry curvature helpers (called after build_Hq / n_sub are defined) ──
-
-def _dHdka(qvec, alpha, D_val, dq=2e-5):
-    ea = np.zeros(3); ea[alpha] = dq
-    return (build_Hq(qvec + ea, D_val) - build_Hq(qvec - ea, D_val)) / (2*dq)
-
-
-def berry_curvature_vec(qvec, band_idx, D_val):
-    """Berry curvature vector Ω_n(k) via Kubo formula (units: Å²)."""
-    ev, vcs = eigh(build_Hq(qvec, D_val))
-    psi_n = vcs[:, band_idx]
-    dH = [_dHdka(qvec, a, D_val) for a in range(3)]
-    Omega = np.zeros(3)
-    for m in range(n_sub):
-        if m == band_idx:
-            continue
-        dE = ev[m] - ev[band_idx]
-        if abs(dE) < 1e-10:
-            continue
-        psi_m = vcs[:, m]
-        for ci, (a, b) in enumerate([(1, 2), (2, 0), (0, 1)]):
-            mna = psi_n.conj() @ dH[a] @ psi_m
-            mnb = psi_m.conj() @ dH[b] @ psi_n
-            Omega[ci] += -2.0 * np.imag(mna * mnb) / dE**2
-    return Omega
-
-
-def chern_number_sphere(q_W, r_sphere, band_idx, D_val, N_theta=20, N_phi=40):
-    """Chern number by integrating Berry curvature over a sphere of radius r_sphere."""
-    th_e = np.linspace(0, np.pi, N_theta + 1)
-    phi  = np.linspace(0, 2*np.pi, N_phi, endpoint=False)
-    dt   = np.pi / N_theta
-    dp   = 2*np.pi / N_phi
-    C    = 0.0
-    for it in range(N_theta):
-        tm = 0.5 * (th_e[it] + th_e[it + 1])
-        st = np.sin(tm)
-        for p in phi:
-            n_hat = np.array([st * np.cos(p), st * np.sin(p), np.cos(tm)])
-            k = q_W + r_sphere * n_hat
-            Om = berry_curvature_vec(k, band_idx, D_val)
-            C += np.dot(Om, n_hat) * r_sphere**2 * st * dt * dp
-    return C / (2 * np.pi)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  1. LSWT SOLVER
 # ═══════════════════════════════════════════════════════════════════════════
 
-a_cub = 9.89      # Å
-J_FM  = 8.22      # meV
-S_val = 0.5
 Emax  = 55.0      # meV
 dE    = 1.5       # meV FWHM broadening
 npts  = 300       # q-points per segment
 nE    = 500
 T_K   = 5.0
-kB    = 0.08617   # meV/K
 
 DJ_vals = np.array([0.00, 0.10, 0.20, 0.32, 0.40, 0.50,
                     0.60, 0.70, 0.80, 0.90, 1.00])
 nDJ = len(DJ_vals)
 
-# Primitive FCC lattice vectors
-a1 = (a_cub / 2) * np.array([0, 1, 1], float)
-a2 = (a_cub / 2) * np.array([1, 0, 1], float)
-a3 = (a_cub / 2) * np.array([1, 1, 0], float)
-
-r_sub = np.array([[0, 0, 0], [1/4, 1/4, 0],
-                  [1/4, 0, 1/4], [0, 1/4, 1/4]]) * a_cub
-n_sub = 4
-
-d_NN = a_cub / (2 * np.sqrt(2))
-bonds = []
-for i in range(n_sub):
-    for j in range(n_sub):
-        for n1 in range(-1, 2):
-            for n2 in range(-1, 2):
-                for n3 in range(-1, 2):
-                    if i == j and n1 == n2 == n3 == 0:
-                        continue
-                    rj = r_sub[j] + n1*a1 + n2*a2 + n3*a3
-                    if abs(np.linalg.norm(rj - r_sub[i]) - d_NN) < 0.1:
-                        bonds.append((i, j, np.array([n1, n2, n3]),
-                                      rj - r_sub[i]))
-
 print(f"NN bonds: {len(bonds)}")
-
-
-def _nearest_tet_centre(r_mid):
-    c_up   = (a_cub / 8) * np.array([1, 1, 1], float)
-    c_dn   = (a_cub / 8) * np.array([3, 3, 3], float)
-    shifts = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],
-                       [1,1,0],[1,0,1],[0,1,1],[1,1,1],
-                       [-1,0,0],[0,-1,0],[0,0,-1],
-                       [-1,-1,0],[-1,0,-1],[0,-1,-1]], float)
-    best, bd = None, np.inf
-    for s in shifts:
-        R = (a_cub / 2) * s
-        for c in (c_up, c_dn):
-            d = np.linalg.norm(R + c - r_mid)
-            if d < bd:
-                bd, best = d, R + c.copy()
-    return best
-
-
-dm_unit = []
-for (i, j, dl, dv) in bonds:
-    d_hat = dv / np.linalg.norm(dv)
-    r_mid = r_sub[i] + 0.5 * dv
-    c = _nearest_tet_centre(r_mid)
-    a_vec = c - r_mid
-    a_nrm = np.linalg.norm(a_vec)
-    if a_nrm < 1e-10:
-        dm_unit.append(np.zeros(3))
-        continue
-    dm = np.cross(a_vec / a_nrm, d_hat)
-    dm_nrm = np.linalg.norm(dm)
-    dm_unit.append(dm / dm_nrm if dm_nrm > 1e-10 else np.zeros(3))
-
-n_hat = np.array([1, 1, 1]) / np.sqrt(3)
-
-
-def build_Hq(qvec, D_val):
-    """LSWT Hamiltonian for pyrochlore FM with DM interaction.
-    
-    DM vectors are projected onto the [111] magnetisation axis (n_hat).
-    This is exact for the q=0 ordered state; finite-q canting corrections
-    enter at O(D²/J²) and are neglected here.
-    """
-    H = np.zeros((n_sub, n_sub), dtype=complex)
-    for b, (i, j, dl, dv) in enumerate(bonds):
-        Dn  = D_val * np.dot(dm_unit[b], n_hat)
-        dlc = dl[0]*a1 + dl[1]*a2 + dl[2]*a3
-        ph  = np.exp(1j * np.dot(qvec, dlc))
-        H[i, i] += S_val * (J_FM + Dn)
-        H[i, j] -= S_val * (J_FM + 1j*Dn) * ph
-    return H
-
-
-# Reciprocal lattice
-V  = np.dot(a1, np.cross(a2, a3))
-b1 = 2*np.pi * np.cross(a2, a3) / V
-b2 = 2*np.pi * np.cross(a3, a1) / V
-b3 = 2*np.pi * np.cross(a1, a2) / V
-
-G_pt = np.array([0,   0,   0  ])
-X_pt = np.array([1/2, 0,   1/2])
-W_pt = np.array([1/2, 1/4, 3/4])
-L_pt = np.array([1/2, 1/2, 1/2])
-
-def frac2cart(hkl):
-    return hkl[0]*b1 + hkl[1]*b2 + hkl[2]*b3
 
 path_pts = [G_pt, X_pt, W_pt, L_pt, G_pt]
 qpath, ticks = [], [0]
@@ -254,27 +73,12 @@ qpath = np.array(qpath)
 ticks = np.array(ticks, dtype=int)
 nQ    = len(qpath)
 
-# Magnetic form factor V4+
-def ff2_V4(Qmag):
-    s = Qmag / (4*np.pi)
-    s2 = s**2
-    return (0.0635*np.exp(-12.6861*s2) + 0.3033*np.exp(-5.4669*s2)
-            + 0.6507*np.exp(-2.1724*s2) - 0.0176)**2
-
 G0  = frac2cart(np.array([2, 0, 0]))
 Qfc = qpath + G0
 Qm  = np.linalg.norm(Qfc, axis=1)
 Qh  = Qfc / Qm[:, None]
 pf  = np.clip(1 - (Qh @ n_hat)**2, 0, 1)
 ff2 = ff2_V4(Qm)
-
-
-def bose(E, T):
-    if T < 0.1:
-        return np.ones_like(E)
-    x = E / (kB * T)
-    return np.where(x > 500, 1, np.where(x < 1e-10, 1/np.maximum(x, 1e-30),
-                                          1/(1 - np.exp(-x))))
 
 
 # Compute bands for all D/J
@@ -336,81 +140,20 @@ for idj, dj in enumerate(DJ_vals):
         omGL[idj, :, iq] = ev
 
 # Locate crossings
-thr = 0.05   # meV gap threshold
-crossings = []
-for idj, dj in enumerate(DJ_vals):
-    if dj < 0.01:
-        continue
-    for b in range(n_sub - 1):
-        gap = omGL[idj, b+1, :] - omGL[idj, b, :]
-        for iq in range(1, n_fine - 1):
-            if (abs(gap[iq]) < abs(gap[iq-1]) and
-                    abs(gap[iq]) < abs(gap[iq+1]) and
-                    abs(gap[iq]) < thr):
-                tc = t_fine[iq]
-                oc = 0.5*(omGL[idj, b, iq] + omGL[idj, b+1, iq])
-                dup = any(abs(p['t'] - tc) < 0.01
-                          and p['dj_idx'] == idj
-                          and p['bands'] == (b, b+1)
-                          for p in crossings)
-                if not dup:
-                    crossings.append(dict(dj=dj, dj_idx=idj, bands=(b, b+1),
-                                          t=tc, q=tc*qL, omega=oc))
+crossings = find_crossings(omGL, t_fine, DJ_vals, qL, thr=0.05)
 
 print(f"Crossings found: {len(crossings)}")
 
 # k·p velocities
 qL_len = np.linalg.norm(qL)
 win    = 0.08
-
-def _cone_hi(dq, w0, v): return w0 + v*np.abs(dq)
-def _cone_lo(dq, w0, v): return w0 - v*np.abs(dq)
-
-
-for wc in crossings:
-    idj = wc['dj_idx']
-    b0, b1_ = wc['bands']
-    mask = np.abs(t_fine - wc['t']) < win
-    if mask.sum() < 20:
-        wc['vW'] = np.nan; continue
-    dq = (t_fine[mask] - wc['t']) * qL_len
-    try:
-        ph, _ = curve_fit(_cone_hi, dq, omGL[idj, b1_, mask],
-                          p0=[wc['omega'], 50.], maxfev=5000)
-        vhi = abs(ph[1])
-    except Exception:
-        vhi = np.nan
-    try:
-        pl, _ = curve_fit(_cone_lo, dq, omGL[idj, b0, mask],
-                          p0=[wc['omega'], 50.], maxfev=5000)
-        vlo = abs(pl[1])
-    except Exception:
-        vlo = np.nan
-    wc['vW']  = 0.5*(vhi + vlo) if not (np.isnan(vhi) or np.isnan(vlo)) else np.nan
-    wc['vhi'] = vhi
-    wc['vlo'] = vlo
+fit_cone_velocities(crossings, omGL, t_fine, qL_len, win)
 
 # Löwdin projection → chirality
-pauli = [np.array([[0,1],[1,0]], complex),
-         np.array([[0,-1j],[1j,0]], complex),
-         np.array([[1,0],[0,-1]], complex)]
-dq_d = 1e-5
-
 for wc in crossings:
     if np.isnan(wc.get('vW', np.nan)):
         wc['chi'] = 0; continue
-    D = wc['dj'] * J_FM
-    b0, b1_ = wc['bands']
-    _, vcs = eigh(build_Hq(wc['q'], D))
-    P = vcs[:, [b0, b1_]]
-    V_ax = []
-    for e in [np.array([1,0,0.]), np.array([0,1,0.]), np.array([0,0,1.])]:
-        dH = (build_Hq(wc['q'] + dq_d*e, D) -
-              build_Hq(wc['q'] - dq_d*e, D)) / (2*dq_d)
-        V_ax.append(P.conj().T @ dH @ P)
-    vt = np.array([[np.real(np.trace(p @ Va)) / 2
-                    for p in pauli] for Va in V_ax])
-    wc['chi'] = int(np.sign(np.linalg.det(vt)))
+    wc['chi'], V_ax = kp_projection(wc['q'], wc['bands'], wc['dj'] * J_FM)
     # velocity along [111]
     V111 = sum(V_ax) / np.sqrt(3)
     wc['vW_kp'] = np.sqrt(sum(abs(np.real(np.trace(p @ V111))/2)**2 for p in pauli))
@@ -623,11 +366,7 @@ if nPan > 0:
 #  Fig E: 3D Weyl cone at D/J ≈ 0.30
 # ──────────────────────────────────────────────────────────────────────────
 print("Generating: fig_weyl_cone_3D")
-repr_wc = None
-for wc in crossings:
-    if not np.isnan(wc.get('vW', np.nan)):
-        if repr_wc is None or abs(wc['dj'] - 0.32) < abs(repr_wc['dj'] - 0.32):
-            repr_wc = wc
+repr_wc = representative_crossing(crossings, 0.32)
 
 if repr_wc is not None:
     D_r  = repr_wc['dj'] * J_FM
@@ -777,16 +516,7 @@ if repr_wc is not None:
                 oc  = 0.5 * (om_sc[b, imin] + om_sc[b + 1, imin])
                 q_c = tc * qLi
                 # Chirality via Löwdin projection
-                _, vcs_c = eigh(build_Hq(q_c, D_r))
-                Pc = vcs_c[:, [b, b + 1]]
-                V_ax_c = []
-                for e_ax in [np.array([1, 0, 0.]), np.array([0, 1, 0.]), np.array([0, 0, 1.])]:
-                    dHc = (build_Hq(q_c + dq_d * e_ax, D_r) -
-                           build_Hq(q_c - dq_d * e_ax, D_r)) / (2 * dq_d)
-                    V_ax_c.append(Pc.conj().T @ dHc @ Pc)
-                vt_c = np.array([[np.real(np.trace(p @ Va)) / 2
-                                  for p in pauli] for Va in V_ax_c])
-                chi_c = int(np.sign(np.linalg.det(vt_c)))
+                chi_c, _ = kp_projection(q_c, (b, b + 1), D_r)
                 all_wcs.append({'label': lbl, 'chi': chi_c, 't': tc,
                                 'omega': oc, 'bands': (b, b + 1)})
                 break   # one crossing per direction per band pair
@@ -850,32 +580,7 @@ if repr_wc is not None:
 
 print("\n── Section 5: Phase diagram (D/J × J₂/J) ─────────────────────────────")
 
-# Build NNN bond list (d_NNN ≈ 6.056 Å = a_cub×√6/4)
-d_NNN = a_cub * np.sqrt(6) / 4
-nnn_bonds = []
-for i in range(n_sub):
-    for j in range(n_sub):
-        for n1 in range(-2, 3):
-            for n2 in range(-2, 3):
-                for n3 in range(-2, 3):
-                    if i == j and n1 == n2 == n3 == 0:
-                        continue
-                    rj = r_sub[j] + n1*a1 + n2*a2 + n3*a3
-                    if abs(np.linalg.norm(rj - r_sub[i]) - d_NNN) < 0.08:
-                        nnn_bonds.append((i, j, np.array([n1, n2, n3]),
-                                          rj - r_sub[i]))
 print(f"NNN bonds found: {len(nnn_bonds)}")
-
-
-def build_Hq_J2(qvec, D_val, J2_val):
-    """LSWT Hamiltonian with NN DM (D_val) and NNN isotropic exchange (J2_val)."""
-    H = build_Hq(qvec, D_val).copy()
-    for (i, j, dl_int, dv) in nnn_bonds:
-        dlc = dl_int[0]*a1 + dl_int[1]*a2 + dl_int[2]*a3
-        ph  = np.exp(1j * np.dot(qvec, dlc))
-        H[i, i] += S_val * J2_val
-        H[i, j] -= S_val * J2_val * ph
-    return H
 
 
 # 2D scan
@@ -965,26 +670,6 @@ D_arc   = 0.32 * J_FM   # use Y₂V₂O₇ value
 N_slab  = 50            # number of unit cells stacked along a₃
 N_surf  = 2             # layers counted as "surface" on each side
 N_kpar  = 300           # k-points along surface BZ path
-
-
-def build_H_slab(kpar3, D_val, N_layers):
-    """
-    Slab Hamiltonian for stacking along a₃.  kpar3 is a 3-component Cartesian
-    vector with zero component along a₃ (in-plane k).  Layer index = m₃ coeff.
-    """
-    Hs = np.zeros((4*N_layers, 4*N_layers), dtype=complex)
-    for b, (i, j, dl_int, dv) in enumerate(bonds):
-        n1, n2, n3 = dl_int
-        delta_l = n3           # stacking direction = a₃ coefficient
-        dl_inplane = n1*a1 + n2*a2   # in-plane part (a₃ has zero contribution here)
-        ph_xy = np.exp(1j * np.dot(kpar3, dl_inplane))
-        Dn    = D_val * np.dot(dm_unit[b], n_hat)
-        for l in range(N_layers):
-            l2 = l + delta_l
-            if 0 <= l2 < N_layers:
-                Hs[4*l + i, 4*l + i]   += S_val * (J_FM + Dn)
-                Hs[4*l + i, 4*l2 + j]  -= S_val * (J_FM + 1j*Dn) * ph_xy
-    return Hs
 
 
 # Surface BZ path:  X̄ → Γ̄ → M̄ where Γ̄=(0,0,0), X̄=b₁/2, M̄=(b₁+b₂)/2
@@ -1083,24 +768,6 @@ plt.close(fig_arc)
 
 print("\n── Section 7: Magnon Hall conductivity ────────────────────────────────")
 
-from scipy.special import spence   # spence(z) = Li₂(1-z)
-
-def c2_bose(rho):
-    """
-    c₂(ρ) thermal weight for bosons (Matsumoto-Murakami 2011):
-      c₂(ρ) = (1+ρ)(ln((1+ρ)/ρ))² − (ln ρ)² − 2 Li₂(−ρ)
-    Li₂(−ρ) = spence(1+ρ)  [scipy convention: spence(z) = Li₂(1−z)]
-    """
-    rho = np.atleast_1d(np.asarray(rho, float))
-    out = np.zeros_like(rho)
-    ok  = rho > 1e-8
-    r   = rho[ok]
-    out[ok] = ((1+r) * np.log((1+r)/r)**2
-               - np.log(r)**2
-               - 2.0 * spence(1.0 + r))
-    return out
-
-
 # BZ grid (Monkhorst-Pack) in fractional reciprocal coords
 N_MP = 20   # 20³ = 8000 k-points
 mp   = np.arange(N_MP) / N_MP
@@ -1130,25 +797,9 @@ Om_xy_all  = np.zeros((n_sub, N_kbz))   # Å²
 omega_bz   = np.zeros((n_sub, N_kbz))   # meV
 
 for ik, kv in enumerate(kpts_cart):
-    ev, vc = eigh(build_Hq(kv, D_hall))
+    ev, Om = berry_curvature_all(kv, D_hall)
     omega_bz[:, ik] = np.real(ev)
-    # Velocity matrices via finite differences (once per k-point, shared)
-    dH = [_dHdka(kv, a, D_hall) for a in range(3)]
-    for nb in range(n_sub):
-        pn = vc[:, nb]
-        Oz = 0.0
-        for m in range(n_sub):
-            if m == nb:
-                continue
-            dE = ev[m] - ev[nb]
-            if abs(dE) < 1e-10:
-                continue
-            pm = vc[:, m]
-            # Ω^z = Ω^{xy}: uses (a=0,b=1) = (x,y) components
-            mna = pn.conj() @ dH[0] @ pm
-            mnb = pm.conj() @ dH[1] @ pn
-            Oz += -2.0 * np.imag(mna * mnb) / dE**2
-        Om_xy_all[nb, ik] = Oz
+    Om_xy_all[:, ik] = Om[:, 2]   # Ω^z = Ω^{xy}
     if (ik+1) % 2000 == 0:
         print(f"    {ik+1}/{N_kbz}  ({__import__('time').time()-t_hall:.0f}s)")
 

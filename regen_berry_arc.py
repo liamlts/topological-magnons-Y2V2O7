@@ -6,149 +6,22 @@ Runtime: ~2-3 min.
 
 import os
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import PowerNorm
 from scipy.linalg import eigh
-from scipy.optimize import curve_fit
+
+from y2v2o7.lattice import J_FM, n_sub, b1, b2, L_pt, frac2cart
+from y2v2o7.lswt import (build_Hq, build_H_slab, berry_curvature_vec,
+                         chern_number_sphere, find_crossings,
+                         fit_cone_velocities, kp_projection,
+                         representative_crossing)
+from y2v2o7.style import use as use_style, label, save, COL1, COL2, C_BLUE
 
 os.makedirs('Figures', exist_ok=True)
-
-mpl.rcParams.update({
-    'font.family':        'sans-serif',
-    'font.sans-serif':    ['Helvetica', 'Arial', 'DejaVu Sans'],
-    'font.size':          7,
-    'axes.labelsize':     7,
-    'axes.titlesize':     7,
-    'xtick.labelsize':    6,
-    'ytick.labelsize':    6,
-    'legend.fontsize':    6,
-    'axes.linewidth':     0.5,
-    'xtick.major.width':  0.5,
-    'ytick.major.width':  0.5,
-    'xtick.major.size':   2.5,
-    'ytick.major.size':   2.5,
-    'xtick.minor.size':   1.5,
-    'ytick.minor.size':   1.5,
-    'xtick.direction':    'out',
-    'ytick.direction':    'out',
-    'lines.linewidth':    0.8,
-    'figure.dpi':         150,
-    'savefig.dpi':        600,
-    'savefig.bbox':       'tight',
-    'savefig.pad_inches': 0.02,
-    'pdf.fonttype':       42,
-    'ps.fonttype':        42,
-})
-
-COL1 = 3.386
-COL2 = 7.008
-C_BLUE   = '#0073BD'
-C_RED    = '#D92B2B'
-C_ORANGE = '#ED8C00'
-
-
-def label(ax, letter, dark_bg=False, x=0.025, y=0.97):
-    color = 'white' if dark_bg else 'black'
-    bbox = dict(facecolor='k', alpha=0.55, pad=1.5,
-                boxstyle='round,pad=0.2', edgecolor='none') if dark_bg else None
-    ax.text(x, y, f'{letter}.', transform=ax.transAxes,
-            fontsize=8, fontweight='bold', va='top', ha='left', color=color,
-            bbox=bbox)
-
-
-def save(fig, name):
-    for ext in ('pdf', 'png'):
-        path = f'Figures/{name}.{ext}'
-        fig.savefig(path, dpi=600 if ext == 'pdf' else 300)
-        print(f'  saved {path}')
-
+use_style()
 
 # ── Physics setup ─────────────────────────────────────────────────────────────
-a_cub = 9.89
-J_FM  = 8.22
-S_val = 0.5
 DJ_vals = np.array([0.00, 0.10, 0.20, 0.32, 0.40, 0.50,
                     0.60, 0.70, 0.80, 0.90, 1.00])
-
-a1 = (a_cub / 2) * np.array([0, 1, 1], float)
-a2 = (a_cub / 2) * np.array([1, 0, 1], float)
-a3 = (a_cub / 2) * np.array([1, 1, 0], float)
-
-r_sub = np.array([[0, 0, 0], [1/4, 1/4, 0],
-                  [1/4, 0, 1/4], [0, 1/4, 1/4]]) * a_cub
-n_sub = 4
-
-d_NN = a_cub / (2 * np.sqrt(2))
-bonds = []
-for i in range(n_sub):
-    for j in range(n_sub):
-        for n1 in range(-1, 2):
-            for n2 in range(-1, 2):
-                for n3 in range(-1, 2):
-                    if i == j and n1 == n2 == n3 == 0:
-                        continue
-                    rj = r_sub[j] + n1*a1 + n2*a2 + n3*a3
-                    if abs(np.linalg.norm(rj - r_sub[i]) - d_NN) < 0.1:
-                        bonds.append((i, j, np.array([n1, n2, n3]), rj - r_sub[i]))
-
-print(f"NN bonds: {len(bonds)}")
-
-
-def _nearest_tet_centre(r_mid):
-    c_up = (a_cub / 8) * np.array([1, 1, 1], float)
-    c_dn = (a_cub / 8) * np.array([3, 3, 3], float)
-    shifts = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],
-                       [1,1,0],[1,0,1],[0,1,1],[1,1,1],
-                       [-1,0,0],[0,-1,0],[0,0,-1],
-                       [-1,-1,0],[-1,0,-1],[0,-1,-1]], float)
-    best, bd = None, np.inf
-    for s in shifts:
-        R = (a_cub / 2) * s
-        for c in (c_up, c_dn):
-            d = np.linalg.norm(R + c - r_mid)
-            if d < bd:
-                bd, best = d, R + c.copy()
-    return best
-
-
-dm_unit = []
-for (i, j, dl, dv) in bonds:
-    d_hat = dv / np.linalg.norm(dv)
-    r_mid = r_sub[i] + 0.5 * dv
-    c = _nearest_tet_centre(r_mid)
-    a_vec = c - r_mid
-    a_nrm = np.linalg.norm(a_vec)
-    if a_nrm < 1e-10:
-        dm_unit.append(np.zeros(3))
-        continue
-    dm = np.cross(a_vec / a_nrm, d_hat)
-    dm_nrm = np.linalg.norm(dm)
-    dm_unit.append(dm / dm_nrm if dm_nrm > 1e-10 else np.zeros(3))
-
-n_hat = np.array([1, 1, 1]) / np.sqrt(3)
-
-
-def build_Hq(qvec, D_val):
-    H = np.zeros((n_sub, n_sub), dtype=complex)
-    for b, (i, j, dl, dv) in enumerate(bonds):
-        Dn  = D_val * np.dot(dm_unit[b], n_hat)
-        dlc = dl[0]*a1 + dl[1]*a2 + dl[2]*a3
-        ph  = np.exp(1j * np.dot(qvec, dlc))
-        H[i, i] += S_val * (J_FM + Dn)
-        H[i, j] -= S_val * (J_FM + 1j*Dn) * ph
-    return H
-
-
-V  = np.dot(a1, np.cross(a2, a3))
-b1 = 2*np.pi * np.cross(a2, a3) / V
-b2 = 2*np.pi * np.cross(a3, a1) / V
-b3 = 2*np.pi * np.cross(a1, a2) / V
-
-L_pt = np.array([1/2, 1/2, 1/2])
-
-def frac2cart(hkl):
-    return hkl[0]*b1 + hkl[1]*b2 + hkl[2]*b3
 
 qL = frac2cart(L_pt)
 Lh = qL / np.linalg.norm(qL)
@@ -156,48 +29,6 @@ e1_GL = np.cross(Lh, np.array([0., 0., 1.]))
 e1_GL /= np.linalg.norm(e1_GL)
 e2_GL = np.cross(Lh, e1_GL)
 e2_GL /= np.linalg.norm(e2_GL)
-
-
-# ── Berry curvature helpers ───────────────────────────────────────────────────
-def _dHdka(qvec, alpha, D_val, dq=2e-5):
-    ea = np.zeros(3); ea[alpha] = dq
-    return (build_Hq(qvec + ea, D_val) - build_Hq(qvec - ea, D_val)) / (2*dq)
-
-
-def berry_curvature_vec(qvec, band_idx, D_val):
-    ev, vcs = eigh(build_Hq(qvec, D_val))
-    psi_n = vcs[:, band_idx]
-    dH = [_dHdka(qvec, a, D_val) for a in range(3)]
-    Omega = np.zeros(3)
-    for m in range(n_sub):
-        if m == band_idx:
-            continue
-        dE = ev[m] - ev[band_idx]
-        if abs(dE) < 1e-10:
-            continue
-        psi_m = vcs[:, m]
-        for ci, (a, b_) in enumerate([(1, 2), (2, 0), (0, 1)]):
-            mna = psi_n.conj() @ dH[a] @ psi_m
-            mnb = psi_m.conj() @ dH[b_] @ psi_n
-            Omega[ci] += -2.0 * np.imag(mna * mnb) / dE**2
-    return Omega
-
-
-def chern_number_sphere(q_W, r_sphere, band_idx, D_val, N_theta=20, N_phi=40):
-    th_e = np.linspace(0, np.pi, N_theta + 1)
-    phi  = np.linspace(0, 2*np.pi, N_phi, endpoint=False)
-    dt   = np.pi / N_theta
-    dp   = 2*np.pi / N_phi
-    C    = 0.0
-    for it in range(N_theta):
-        tm = 0.5 * (th_e[it] + th_e[it + 1])
-        st = np.sin(tm)
-        for p in phi:
-            n_h = np.array([st * np.cos(p), st * np.sin(p), np.cos(tm)])
-            k   = q_W + r_sphere * n_h
-            Om  = berry_curvature_vec(k, band_idx, D_val)
-            C  += np.dot(Om, n_h) * r_sphere**2 * st * dt * dp
-    return C / (2 * np.pi)
 
 
 # ── Fine Γ→L scan — find Weyl crossings ──────────────────────────────────────
@@ -214,80 +45,22 @@ for idj, dj in enumerate(DJ_vals):
         ev = np.sort(np.real(eigh(build_Hq(qGL[iq], D), eigvals_only=True)))
         omGL[idj, :, iq] = ev
 
-thr = 0.05
-crossings = []
-for idj, dj in enumerate(DJ_vals):
-    if dj < 0.01:
-        continue
-    for b in range(n_sub - 1):
-        gap = omGL[idj, b+1, :] - omGL[idj, b, :]
-        for iq in range(1, n_fine - 1):
-            if (abs(gap[iq]) < abs(gap[iq-1]) and
-                    abs(gap[iq]) < abs(gap[iq+1]) and
-                    abs(gap[iq]) < thr):
-                tc = t_fine[iq]
-                oc = 0.5*(omGL[idj, b, iq] + omGL[idj, b+1, iq])
-                dup = any(abs(p['t'] - tc) < 0.01
-                          and p['dj_idx'] == idj
-                          and p['bands'] == (b, b+1)
-                          for p in crossings)
-                if not dup:
-                    crossings.append(dict(dj=dj, dj_idx=idj, bands=(b, b+1),
-                                          t=tc, q=tc*qL, omega=oc))
+crossings = find_crossings(omGL, t_fine, DJ_vals, qL, thr=0.05)
 
 print(f"Crossings found: {len(crossings)}")
 
 # k·p velocities + chirality
-win  = 0.08
-pauli = [np.array([[0,1],[1,0]], complex),
-         np.array([[0,-1j],[1j,0]], complex),
-         np.array([[1,0],[0,-1]], complex)]
-dq_d = 1e-5
-
-def _cone_hi(dq, w0, v): return w0 + v*np.abs(dq)
-def _cone_lo(dq, w0, v): return w0 - v*np.abs(dq)
-
-for wc in crossings:
-    idj = wc['dj_idx']
-    b0, b1_ = wc['bands']
-    mask = np.abs(t_fine - wc['t']) < win
-    if mask.sum() < 20:
-        wc['vW'] = np.nan; continue
-    dq = (t_fine[mask] - wc['t']) * qL_len
-    try:
-        ph, _ = curve_fit(_cone_hi, dq, omGL[idj, b1_, mask], p0=[wc['omega'], 50.], maxfev=5000)
-        vhi = abs(ph[1])
-    except Exception:
-        vhi = np.nan
-    try:
-        pl, _ = curve_fit(_cone_lo, dq, omGL[idj, b0, mask], p0=[wc['omega'], 50.], maxfev=5000)
-        vlo = abs(pl[1])
-    except Exception:
-        vlo = np.nan
-    wc['vW'] = 0.5*(vhi + vlo) if not (np.isnan(vhi) or np.isnan(vlo)) else np.nan
+fit_cone_velocities(crossings, omGL, t_fine, qL_len, win=0.08)
 
 for wc in crossings:
     if np.isnan(wc.get('vW', np.nan)):
         wc['chi'] = 0; continue
-    D = wc['dj'] * J_FM
-    b0, b1_ = wc['bands']
-    _, vcs = eigh(build_Hq(wc['q'], D))
-    P = vcs[:, [b0, b1_]]
-    V_ax = []
-    for e in [np.array([1,0,0.]), np.array([0,1,0.]), np.array([0,0,1.])]:
-        dH = (build_Hq(wc['q'] + dq_d*e, D) - build_Hq(wc['q'] - dq_d*e, D)) / (2*dq_d)
-        V_ax.append(P.conj().T @ dH @ P)
-    vt = np.array([[np.real(np.trace(p @ Va)) / 2 for p in pauli] for Va in V_ax])
-    wc['chi'] = int(np.sign(np.linalg.det(vt)))
+    wc['chi'], _ = kp_projection(wc['q'], wc['bands'], wc['dj'] * J_FM)
 
 print("k·p done.")
 
 # Select repr_wc closest to D/J = 0.32
-repr_wc = None
-for wc in crossings:
-    if not np.isnan(wc.get('vW', np.nan)):
-        if repr_wc is None or abs(wc['dj'] - 0.32) < abs(repr_wc['dj'] - 0.32):
-            repr_wc = wc
+repr_wc = representative_crossing(crossings, 0.32)
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  BERRY CURVATURE + CHERN NUMBER
@@ -346,14 +119,7 @@ if repr_wc is not None:
                 tc  = t_sc[imin]
                 oc  = 0.5 * (om_sc[b, imin] + om_sc[b+1, imin])
                 q_c = tc * qLi
-                _, vcs_c = eigh(build_Hq(q_c, D_r))
-                Pc = vcs_c[:, [b, b+1]]
-                V_ax_c = []
-                for e_ax in [np.array([1,0,0.]), np.array([0,1,0.]), np.array([0,0,1.])]:
-                    dHc = (build_Hq(q_c + dq_d*e_ax, D_r) - build_Hq(q_c - dq_d*e_ax, D_r)) / (2*dq_d)
-                    V_ax_c.append(Pc.conj().T @ dHc @ Pc)
-                vt_c = np.array([[np.real(np.trace(p @ Va)) / 2 for p in pauli] for Va in V_ax_c])
-                chi_c = int(np.sign(np.linalg.det(vt_c)))
+                chi_c, _ = kp_projection(q_c, (b, b+1), D_r)
                 all_wcs.append({'label': lbl, 'chi': chi_c, 't': tc, 'omega': oc, 'bands': (b, b+1)})
                 break
 
@@ -417,22 +183,6 @@ D_arc  = 0.32 * J_FM
 N_slab = 50
 N_surf = 2
 N_kpar = 300
-
-
-def build_H_slab(kpar3, D_val, N_layers):
-    Hs = np.zeros((4*N_layers, 4*N_layers), dtype=complex)
-    for b, (i, j, dl_int, dv) in enumerate(bonds):
-        n1, n2, n3 = dl_int
-        delta_l    = n3
-        dl_inplane = n1*a1 + n2*a2
-        ph_xy = np.exp(1j * np.dot(kpar3, dl_inplane))
-        Dn    = D_val * np.dot(dm_unit[b], n_hat)
-        for l in range(N_layers):
-            l2 = l + delta_l
-            if 0 <= l2 < N_layers:
-                Hs[4*l + i, 4*l + i]  += S_val * (J_FM + Dn)
-                Hs[4*l + i, 4*l2 + j] -= S_val * (J_FM + 1j*Dn) * ph_xy
-    return Hs
 
 
 Xbar = b1 / 2
