@@ -95,6 +95,14 @@ conda activate topo_magnon
 | `generate_dimer_full_rixs.py` | Full two-site cluster ED RIXS (Kramers–Heisenberg) | `fig_dimer_full_rixs`, `fig_rixs_2d_map` |
 | `generate_xas_overview.py` | V L₂,₃-edge XAS with σ and π polarizations | `fig_xas_overview` |
 
+Two self-contained dimer cluster calculations live in subfolders, each with its
+own README and `Figures/` directory:
+
+| Folder | Model | Runtime |
+|--------|-------|---------|
+| [`vv_dimer_pure_Y2V2O7/`](vv_dimer_pure_Y2V2O7/) | Pure two-site V⁴⁺ t₂g cluster (24 spin-orbitals, no ligand bath); J ≈ 8 meV emerges as the singlet–triplet gap. See its [`CALCULATION.md`](vv_dimer_pure_Y2V2O7/CALCULATION.md) for a full walkthrough. | ~30 s |
+| [`vv_dimer_anderson_Y2V2O7/`](vv_dimer_anderson_Y2V2O7/) | Two-impurity cluster Anderson model: the same dimer plus a shared bridging-O 2p bath (covalency, charge-transfer satellites, state analysis) | ~15–20 min |
+
 ## Running
 
 Generate all figures:
@@ -105,7 +113,12 @@ python generate_dimer.py            # ~10 s
 python generate_dimer_full_rixs.py  # ~5 min (large ED)
 ```
 
-All output goes to `Figures/`.
+All output goes to `Figures/`. The subfolder calculations are run from inside
+their folders and write to their own `Figures/`:
+```bash
+(cd vv_dimer_pure_Y2V2O7 && python generate_dimer_pure.py)
+(cd vv_dimer_anderson_Y2V2O7 && python generate_dimer_anderson.py)
+```
 
 ## Physical Parameters
 

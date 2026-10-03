@@ -15,8 +15,8 @@ state.
 </p>
 
 > **Looking for the simpler pure two-site cluster (no ligand bath)?**
-> That calculation lives in a separate repository:
-> [`liamlts/2-site-cluster-Y2V2O7`](https://github.com/liamlts/2-site-cluster-Y2V2O7).
+> That calculation lives in the sibling folder
+> [`../vv_dimer_pure_Y2V2O7`](../vv_dimer_pure_Y2V2O7).
 
 ## Contents
 
@@ -59,7 +59,7 @@ adds covalency and charge-transfer physics on top.
 ## Running the calculation
 
 ```bash
-# one-time setup (same environment as the pure-dimer repo)
+# one-time setup (same environment as the pure-dimer calculation)
 conda create -n edrixs_run python=3.10
 conda activate edrixs_run
 pip install edrixs numpy scipy matplotlib
@@ -106,7 +106,7 @@ core site A, `[20:26]` 2p core site B.
 - [`topological-magnons-Y2V2O7` root](../) — full Y₂V₂O₇ paper and
   calculation pipeline.
 - Pure two-site cluster (no ligand bath):
-  [`liamlts/2-site-cluster-Y2V2O7`](https://github.com/liamlts/2-site-cluster-Y2V2O7).
+  [`../vv_dimer_pure_Y2V2O7`](../vv_dimer_pure_Y2V2O7).
 - CrI₃ Cluster-Anderson notebook the state-analysis section follows:
   [`mpmdean/He2024dispersive`](https://github.com/mpmdean/He2024dispersive/blob/main/edrixs_calculations/CrI3_AIM_Fortran.ipynb).
 - edrixs: Wang *et al.*, Comput. Phys. Commun. **243**, 151 (2019).
