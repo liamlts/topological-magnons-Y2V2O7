@@ -1,5 +1,7 @@
 # Topological Weyl Magnons in Y₂V₂O₇: Code and Data
 
+[![CI](https://github.com/liamlts/topological-magnons-Y2V2O7/actions/workflows/ci.yml/badge.svg)](https://github.com/liamlts/topological-magnons-Y2V2O7/actions/workflows/ci.yml)
+
 Code repository for the paper
 "Topological Weyl Magnons in Y₂V₂O₇: Polarimetric RIXS Signatures and Thermal Hall Response".
 
@@ -85,6 +87,19 @@ conda env create -f environment.yml
 conda activate topo_magnon
 ```
 
+## Code layout
+
+The physics shared by the figure scripts lives in a small package, `y2v2o7/`:
+
+| Module | Contents |
+|--------|----------|
+| `y2v2o7/lattice.py` | Pyrochlore geometry: sublattices, NN/NNN bonds, Moriya-rule DM vectors, reciprocal lattice |
+| `y2v2o7/lswt.py` | LSWT Hamiltonian H(q) (+ J₂ and slab variants), Kubo Berry curvature, Chern number on a sphere, Weyl-crossing search, k·p chirality, Bose/c₂ thermal weights |
+| `y2v2o7/cluster.py` | Trigonal D₃d crystal field and Gaussian broadening for the EDRIXS scripts |
+| `y2v2o7/style.py` | Publication rcParams, panel labels, figure saving |
+
+The scripts below import from it and only hold parameters, scans and plotting.
+
 ## Scripts
 
 | Script | Description | Figures produced |
@@ -113,12 +128,28 @@ python generate_dimer.py            # ~10 s
 python generate_dimer_full_rixs.py  # ~5 min (large ED)
 ```
 
-All output goes to `Figures/`. The subfolder calculations are run from inside
+All output goes to `Figures/`. Run the scripts from the repository root so
+`y2v2o7` is importable (or `pip install -e .`). The subfolder calculations are run from inside
 their folders and write to their own `Figures/`:
 ```bash
 (cd vv_dimer_pure_Y2V2O7 && python generate_dimer_pure.py)
 (cd vv_dimer_anderson_Y2V2O7 && python generate_dimer_anderson.py)
 ```
+
+## Tests
+
+```bash
+pip install -e ".[test]"
+pytest
+```
+
+The tests check the physics rather than the plots: bond counts and Moriya
+rules for the DM vectors, the Heisenberg limit (Goldstone mode and two flat
+bands at 8JS), stability of the ferromagnet, the time-reversal relation between
+D and −D, Berry curvature summing to zero over bands, the Weyl point at
+ω_W ≈ 29.2 meV with chirality +1 and Chern number ±1 on the lower/upper band,
+and the c₂(ρ) limits. Crystal-field tests that need edrixs are skipped when it
+is not installed (as in CI).
 
 ## Physical Parameters
 
