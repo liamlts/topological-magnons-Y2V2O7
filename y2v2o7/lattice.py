@@ -1,5 +1,7 @@
 """Pyrochlore lattice geometry and DM vectors for Y2V2O7."""
 
+import itertools
+
 import numpy as np
 
 a_cub = 9.89      # Å
@@ -41,19 +43,19 @@ nnn_bonds = find_bonds(d_NNN, 2, 0.08)
 
 
 def _nearest_tet_centre(r_mid):
-    c_up   = (a_cub / 8) * np.array([1, 1, 1], float)
-    c_dn   = (a_cub / 8) * np.array([3, 3, 3], float)
-    shifts = np.array([[0,0,0],[1,0,0],[0,1,0],[0,0,1],
-                       [1,1,0],[1,0,1],[0,1,1],[1,1,1],
-                       [-1,0,0],[0,-1,0],[0,0,-1],
-                       [-1,-1,0],[-1,0,-1],[0,-1,-1]], float)
+    """Centre of the tetrahedron containing the bond with midpoint r_mid.
+
+    Up tetrahedra are centred at (a/8)(1,1,1) + R and down tetrahedra at
+    −(a/8)(1,1,1) + R, with R an FCC lattice vector.
+    """
+    c0 = (a_cub / 8) * np.array([1, 1, 1], float)
     best, bd = None, np.inf
-    for s in shifts:
-        R = (a_cub / 2) * s
-        for c in (c_up, c_dn):
-            d = np.linalg.norm(R + c - r_mid)
+    for n1, n2, n3 in itertools.product(range(-2, 3), repeat=3):
+        R = n1*a1 + n2*a2 + n3*a3
+        for c in (R + c0, R - c0):
+            d = np.linalg.norm(c - r_mid)
             if d < bd:
-                bd, best = d, R + c.copy()
+                bd, best = d, c
     return best
 
 
