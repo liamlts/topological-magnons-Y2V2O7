@@ -14,6 +14,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import edrixs
 
+from y2v2o7.cluster import cf_trigonal_d, gauss_convolve
+from y2v2o7.style import save
+
 os.makedirs('Figures', exist_ok=True)
 
 mpl.rcParams.update({
@@ -45,43 +48,6 @@ COL1   = 3.386   # single-column width (inches)
 C_FLIP = '#D42E2E'
 C_CONS = '#0073BD'
 C_SUM  = '#555555'
-
-
-def cf_trigonal_d(delta_trig):
-    l = 2
-    m_vals = np.arange(-l, l + 1, dtype=float)
-    n = len(m_vals)
-    Lp = np.zeros((n, n), dtype=complex)
-    for i in range(n - 1):
-        m = m_vals[i]
-        Lp[i + 1, i] = np.sqrt((l - m) * (l + m + 1))
-    Lm = Lp.conj().T
-    Lx = (Lp + Lm) / 2.0
-    Ly = (Lp - Lm) / (2j)
-    Lz = np.diag(m_vals.astype(complex))
-    LN = (Lx + Ly + Lz) / np.sqrt(3.0)
-    H5 = -(delta_trig / 3.0) * (LN @ LN - l * (l + 1) / 3.0 * np.eye(n, dtype=complex))
-    H10 = np.zeros((10, 10), dtype=complex)
-    for i in range(n):
-        for j in range(n):
-            H10[2*i,   2*j  ] = H5[i, j]
-            H10[2*i+1, 2*j+1] = H5[i, j]
-    return H10
-
-
-def gauss_convolve(spec, sigma_eV, dE_eV):
-    hw = int(4 * sigma_eV / dE_eV) + 1
-    k  = np.arange(-hw, hw + 1) * dE_eV
-    kernel = np.exp(-0.5 * (k / sigma_eV) ** 2)
-    kernel /= kernel.sum()
-    return np.convolve(spec, kernel, mode='same')
-
-
-def save(fig, name):
-    for ext in ('pdf', 'png'):
-        p = f'Figures/{name}.{ext}'
-        fig.savefig(p, dpi=600 if ext == 'pdf' else 300)
-        print(f'  saved {p}')
 
 
 # ── Parameters ────────────────────────────────────────────────────────────────
