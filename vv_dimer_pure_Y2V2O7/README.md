@@ -96,9 +96,10 @@ B, `[12:18]` 2p core site A, `[18:24]` 2p core site B.
 - The edrixs two-site example this script follows:
   [`Ba3InIr2O9/t2g_two_site_cluster`](https://github.com/NSLS-II/edrixs/tree/master/examples/more/RIXS/Ba3InIr2O9/t2g_two_site_cluster).
 - A Cluster-Anderson extension of the same model (shared bridging-O
-  bath, covalency and charge-transfer satellites) lives in the companion
-  repository
-  [`topological-magnons-Y2V2O7/paper/vv_dimer_anderson_Y2V2O7`](https://github.com/liamlts/topological-magnons-Y2V2O7/tree/main/vv_dimer_anderson_Y2V2O7).
+  bath, covalency and charge-transfer satellites) lives in the sibling
+  folder [`../vv_dimer_anderson_Y2V2O7`](../vv_dimer_anderson_Y2V2O7).
+- [`topological-magnons-Y2V2O7` root](../): full Y₂V₂O₇ paper and
+  calculation pipeline.
 
 ## Citation
 
@@ -110,4 +111,4 @@ If this calculation is useful in your work, please cite **edrixs**:
 
 ## License
 
-MIT.
+MIT. See the repository [`LICENSE`](../LICENSE).
